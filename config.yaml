@@ -1,13 +1,14 @@
 options:
-  string-option:
-    type: string
-    default: "Default Value"
-    description: "A short description of the configuration option"
-  boolean-option:
-    type: boolean
-    default: False
-    description: "A short description of the configuration option"
-  int-option:
+  logrotate-retention:
     type: int
-    default: 9001
-    description: "A short description of the configuration option"
+    default: 180
+    description: |
+      The logrotate retention period in days. The charm will go trough `ALL`
+      logrotate entries in /etc/logrotate.d/ and set the `rotate` config to
+      the appropriate value, depending on the rotation interval used.
+      For example if rotation is monthy and retention is 180 days -> `rotate 6`
+      or rotation is daily and retention is 90 days -> `rotate 90`
+      or rotation is weekly and retention is 21 days -> `rotate 3`
+      Weekly will round up the week count, for example if retention is set
+      to 180 days -> `rotate 26` (26 weeks x 7 days = 182 days)
+      Yearly will put rotate to 1 and increase it with 1 for each 360 days.
