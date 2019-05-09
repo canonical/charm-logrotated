@@ -1,22 +1,44 @@
-Note: This README is the one shown on the Charm store.
+# Overview
+logrotate is a subordinate charm that ensure that all logrotate.d
+configurations within /etc/logrotate.d/ folder are modified acordingly
+to a retention period defined in the charm
 
-# Reactive Charm Template using Python
-
-This is a template for a reactive charm with handlers written in Python.
-It is intended for use with [charm-tools][] and the `charm create` function.
-
-
-## Usage
-
-This is the default template when creating a new charm with `charm create`.
-First, make sure you have [charm-tools][] installed:
-
+# Build
 ```
-sudo snap install charm
+cd charm-logrotate                                                                  
+charm build
 ```
 
-Then just run the create command:
+# Usage
+Add to an existing application using juju-info relation.
 
+Example:
 ```
-charm create my-charm
+juju deploy ubuntu
+juju deploy ./charm-logrotate
+juju add-unit ubuntu
+juju add-relation ubuntu logrotate
 ```
+
+# Configuration                                                                 
+The user can configure the following parameters:
+* ```logrotate-retention``` (default: ```180```): The logrotate retention period in days. The charm will go trough `ALL` logrotate entries in /etc/logrotate.d/ and set the `rotate` config to the appropriate value, depending on the rotation interval used. For example if rotation is monthy and retention is 180 days -> `rotate 6` or rotation is daily and retention is 90 days -> `rotate 90` or rotation is weekly and retention is 21 days -> `rotate 3` Weekly will round up the week count, for example if retention is set to 180 days -> `rotate 26` (26 weeks x 7 days = 182 days) Yearly will put rotate to 1 and increase it with 1 for each 360 days. Monthly will round up, using 30 days for a month. Yearly will round up, adding a year for each 360 days.
+
+# Testing                                                                       
+Unit tests has been developed to test return values from the charm helper class, while modifying pre-defined string entries with the logrotate syntax.
+
+To run unit tests:                                                              
+```bash
+tox -e unit
+```
+Funactional tests have been developed using python-libjuju, deploying a simple ubuntu charm and adding logortate as a subordinate.
+
+To run tests using python-libjuju:
+```bash
+tox -e functional
+```
+
+
+# Contact Information
+Diko Parvanov <diko.parvanov@canonical.com>
+

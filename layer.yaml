@@ -1,7 +1,2 @@
-# exclude the interfaces and layers folders we use for submodules
-exclude:
-  - interfaces
-  - layers
-# include required layers here
 includes:
-  - layer:basic
+  - 'layer:basic'

@@ -2,9 +2,8 @@
 import mock
 import pytest
 
-
 # If layer options are used, add this to ${fixture}
-# and import layer in ${libfile}
+# and import layer in logroate
 @pytest.fixture
 def mock_layers(monkeypatch):
     import sys
@@ -20,8 +19,7 @@ def mock_layers(monkeypatch):
         else:
             return None
 
-    monkeypatch.setattr('${libfile}.layer.options', options)
-
+    monkeypatch.setattr('lib_logrotate.layer.options', options)
 
 @pytest.fixture
 def mock_hookenv_config(monkeypatch):
@@ -39,31 +37,23 @@ def mock_hookenv_config(monkeypatch):
         # cfg['my-other-layer'] = 'mock'
         return cfg
 
-    monkeypatch.setattr('${libfile}.hookenv.config', mock_config)
-
+    monkeypatch.setattr('lib_logrotate.hookenv.config', mock_config)
 
 @pytest.fixture
 def mock_remote_unit(monkeypatch):
-    monkeypatch.setattr('${libfile}.hookenv.remote_unit', lambda: 'unit-mock/0')
+    monkeypatch.setattr('lib_logrotate.hookenv.remote_unit', lambda: 'unit-mock/0')
 
 
 @pytest.fixture
 def mock_charm_dir(monkeypatch):
-    monkeypatch.setattr('${libfile}.hookenv.charm_dir', lambda: '/mock/charm/dir')
-
+    monkeypatch.setattr('lib_logrotate.hookenv.charm_dir', lambda: '/mock/charm/dir')
 
 @pytest.fixture
-def ${fixture}(tmpdir, mock_hookenv_config, mock_charm_dir, monkeypatch):
-    from $libfile import $libclass
-    helper = ${libclass}()
-
-    # Example config file patching
-    cfg_file = tmpdir.join('example.cfg')
-    with open('./tests/unit/example.cfg', 'r') as src_file:
-        cfg_file.write(src_file.read())
-    helper.example_config_file = cfg_file.strpath
+def logrotate(tmpdir, mock_hookenv_config, mock_charm_dir, monkeypatch):
+    from lib_logrotate import LogrotateHelper
+    helper = LogrotateHelper
 
     # Any other functions that load helper will get this version
-    monkeypatch.setattr('${libfile}.${libclass}', lambda: helper)
+    monkeypatch.setattr('lib_logrotate.LogrotateHelper', lambda: helper)
 
     return helper

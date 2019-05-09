@@ -1,0 +1,16 @@
+/var/log/some.log {
+  rotate 123
+  yearly
+}
+/var/log/some.log {
+  rotate 345
+  weekly
+}
+/var/log/some.log {
+  rotate 567
+  monthly
+}
+/var/log/some.log {
+  rotate 789
+  daily
+}
