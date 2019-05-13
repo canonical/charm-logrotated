@@ -10,19 +10,13 @@ LOGROTATE_DIR = "/etc/logrotate.d/"
 class LogrotateHelper:
     """Helper class for logrotate charm."""
 
-<<<<<<< HEAD
     @classmethod
-=======
->>>>>>> 713c82f3bdc9044c9dabad820540869abc000164
     def __init__(self):
         """Init function"""
 
         self.retention = hookenv.config('logrotate-retention')
 
-<<<<<<< HEAD
     @classmethod
-=======
->>>>>>> 713c82f3bdc9044c9dabad820540869abc000164
     def modify_configs(self):
         """Modify the logrotate config files."""
 
@@ -42,10 +36,7 @@ class LogrotateHelper:
             hookenv.log('Changed configuration for {}'.format(file_path))
 
 
-<<<<<<< HEAD
     @classmethod
-=======
->>>>>>> 713c82f3bdc9044c9dabad820540869abc000164
     def modify_content(self, content):
         """Helper function to edit the content of a logrotate file."""
 
@@ -76,10 +67,7 @@ class LogrotateHelper:
         return results
 
 
-<<<<<<< HEAD
     @classmethod
-=======
->>>>>>> 713c82f3bdc9044c9dabad820540869abc000164
     def calculate_count(self, item):
         """Calculate rotate based on rotation interval. Always round up."""
 
