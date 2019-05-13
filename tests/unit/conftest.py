@@ -3,7 +3,7 @@ import mock
 import pytest
 
 # If layer options are used, add this to ${fixture}
-# and import layer in logroate
+# and import layer in logrotate
 @pytest.fixture
 def mock_layers(monkeypatch):
     import sys

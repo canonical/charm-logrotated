@@ -3,7 +3,7 @@ options:
     type: int
     default: 180
     description: |
-      The logrotate retention period in days. The charm will go trough `ALL`
+      The logrotate retention period in days. The charm will go through `ALL`
       logrotate entries in /etc/logrotate.d/ and set the `rotate` config to
       the appropriate value, depending on the rotation interval used.
       For example if rotation is monthy and retention is 180 days -> `rotate 6`

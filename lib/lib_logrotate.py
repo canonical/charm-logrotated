@@ -40,7 +40,7 @@ class LogrotateHelper:
     def modify_content(self, content):
         """Helper function to edit the content of a logrotate file."""
 
-        # Split the content in a logroatate file to separate entries (if
+        # Split the contents in a logrotate file in separate entries (if
         # multiple are found in the file) and put in a list for further
         # processing
         split = content.split('\n')
@@ -54,7 +54,7 @@ class LogrotateHelper:
                 continue
 
         # Work on each item - checking the rotation configuration and setting
-        # the rotate option to the apropriate value
+        # the rotate option to the appropriate value
         results = []
         for item in items:
             count = self.calculate_count(item)

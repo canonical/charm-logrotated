@@ -16,7 +16,7 @@ SERIES = ['xenial',
 @pytest.fixture(scope='module',
                 params=SERIES)
 async def deploy_app(request, model):
-    '''Deploys the logroatate charm as a subordinate of ubuntu'''
+    '''Deploys the logrotate charm as a subordinate of ubuntu'''
     release = request.param
 
     await model.deploy(
