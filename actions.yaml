@@ -1,0 +1,5 @@
+update-logrotate-files:
+  description:  Triggers an update of all the files in /etc/logrotate.d/
+update-cronjob:
+  description: Invokes the cronjob install and cleanup
+

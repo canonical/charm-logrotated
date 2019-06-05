@@ -12,3 +12,20 @@ options:
       Weekly will round up the week count, for example if retention is set
       to 180 days -> `rotate 26` (26 weeks x 7 days = 182 days)
       Yearly will put rotate to 1 and increase it with 1 for each 360 days.
+  logrotate-cronjob:
+    type: boolean
+    default: True
+    description: |
+      Enabled or disables the creation of a cronjob for the automatic updating 
+      of the logrotate files.
+  logrotate-cronjob-frequency:
+    type: int
+    default: 0
+    description: |
+      If logrotate-cronjob is True, then this value is used to determine the 
+      location of the cronjob file
+      0 = /etc/cron.hourly
+      1 = /etc/cron.daily
+      2 = /etc/cron.weekly
+      3 = /etc/cron.monthly
+

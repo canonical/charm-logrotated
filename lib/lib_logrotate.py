@@ -1,8 +1,6 @@
 import os
 import re
 
-from charmhelpers.core import hookenv
-
 
 LOGROTATE_DIR = "/etc/logrotate.d/"
 
@@ -13,8 +11,19 @@ class LogrotateHelper:
     @classmethod
     def __init__(self):
         """Init function"""
+        pass
 
-        self.retention = hookenv.config('logrotate-retention')
+    @classmethod
+    def read_config(self):
+        """Config changed/install hooks dumps config out to disk,
+        Here we read that config to update the cronjob"""
+
+        config_file = open("/etc/logrotate_cronjob_config", "r")
+        lines = config_file.read()
+        lines = lines.split('\n')
+
+        self.retention = int(lines[2])
+
 
     @classmethod
     def modify_configs(self):
@@ -32,8 +41,6 @@ class LogrotateHelper:
             logrotate_file = open(file_path, 'w')
             logrotate_file.write(mod_contents)
             logrotate_file.close()
-
-            hookenv.log('Changed configuration for {}'.format(file_path))
 
 
     @classmethod
