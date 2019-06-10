@@ -26,7 +26,7 @@ class CronHelper:
         else:
             self.cronjob_enabled = False
 
-        self.cronjob_frequency = int(lines[1])
+        self.cronjob_frequency = int(self.cronjob_check_paths.index(lines[1]))
 
 
     @classmethod

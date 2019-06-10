@@ -16,16 +16,12 @@ options:
     type: boolean
     default: True
     description: |
-      Enabled or disables the creation of a cronjob for the automatic updating 
+      Enabled or disables the creation of a cronjob for the automatic updating
       of the logrotate files.
   logrotate-cronjob-frequency:
-    type: int
-    default: 0
+    type: string
+    default: 'hourly'
     description: |
-      If logrotate-cronjob is True, then this value is used to determine the 
-      location of the cronjob file
-      0 = /etc/cron.hourly
-      1 = /etc/cron.daily
-      2 = /etc/cron.weekly
-      3 = /etc/cron.monthly
-
+      If logrotate-cronjob is True, then this value is used to determine the
+      location of the cronjob file.
+      Valid options are 'hourly', 'daily', 'weekly', 'monthly'.
