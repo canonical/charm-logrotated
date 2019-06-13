@@ -38,6 +38,8 @@ class LogrotateHelper:
 
             mod_contents = self.modify_content(content)
 
+            mod_contents = self.modify_header(mod_contents)
+
             logrotate_file = open(file_path, 'w')
             logrotate_file.write(mod_contents)
             logrotate_file.close()
@@ -73,6 +75,20 @@ class LogrotateHelper:
 
         return results
 
+    @classmethod
+    def modify_header(self, content):
+        """Helper function to add Juju headers to the file."""
+
+	header = ("# Configuration file maintained by Juju. "
+		 "Local changes may be overwritten")
+
+        split = content.split('\n')
+        if split[0].startswith(header):
+            result = content
+        else:
+            result = header + '\n' + content
+
+        return result
 
     @classmethod
     def calculate_count(self, item):
