@@ -93,6 +93,9 @@ class LogrotateHelper:
     def calculate_count(self, item):
         """Calculate rotate based on rotation interval. Always round up."""
 
+        # Fallback to default lowest retention - days
+        # better to keep the logs than lose them
+        count = self.retention
         # Daily 1:1 to configuration retention period (in days)
         if 'daily' in item:
             count = self.retention
