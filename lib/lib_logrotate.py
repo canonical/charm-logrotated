@@ -79,7 +79,7 @@ class LogrotateHelper:
     def modify_header(self, content):
         """Helper function to add Juju headers to the file."""
 
-	header = "# Configuration file maintained by Juju. Local changes may be overwritten"
+        header = "# Configuration file maintained by Juju. Local changes may be overwritten"
 
         split = content.split('\n')
         if split[0].startswith(header):
