@@ -68,7 +68,11 @@ class LogrotateHelper:
         for item in items:
             count = self.calculate_count(item)
             rotate = 'rotate {}'.format(count)
-            result = re.sub(r'rotate \d+\.?[0-9]*', rotate, item)
+            # if rotate is missing, add it as last line in the item entry
+            if 'rotate' in item:
+                result = re.sub(r'rotate \d+\.?[0-9]*', rotate, item)
+            else:
+                result = item.replace('}', rotate + '\n}')
             results.append(result)
 
         results = '\n'.join(results)
