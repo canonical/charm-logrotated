@@ -16,25 +16,31 @@ cron = CronHelper()
 @when_not('logrotate.installed')
 def install_logrotate():
     """Install the logrotate charm."""
-    dump_config_to_disk()
-    logrotate.read_config()
-    cron.read_config()
-    logrotate.modify_configs()
+    try:
+        dump_config_to_disk()
+        logrotate.read_config()
+        cron.read_config()
+        logrotate.modify_configs()
+        cron.install_cronjob()
+    except Exception as ex:
+        hookenv.status_set('blocked', str(ex))
     hookenv.status_set('active', 'Unit is ready.')
     set_flag('logrotate.installed')
-    cron.install_cronjob()
 
 
 @when('config.changed')
 def config_changed():
     """Run when configuration changes."""
-    dump_config_to_disk()
-    cron.read_config()
-    logrotate.read_config()
-    hookenv.status_set('maintenance', 'Modifying configs.')
-    logrotate.modify_configs()
+    try:
+        dump_config_to_disk()
+        cron.read_config()
+        logrotate.read_config()
+        hookenv.status_set('maintenance', 'Modifying configs.')
+        logrotate.modify_configs()
+        cron.install_cronjob()
+    except Exception as ex:
+        hookenv.status_set('blocked', str(ex))
     hookenv.status_set('active', 'Unit is ready.')
-    cron.install_cronjob()
 
 
 def dump_config_to_disk():
