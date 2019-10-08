@@ -57,10 +57,7 @@ class CronHelper:
         """Cleanup previous config."""
         if frequency == -1:
             for check_path in self.cronjob_check_paths:
-                path = self.cronjob_base_path \
-                       + check_path \
-                       + "/" \
-                       + self.cronjob_logrotate_cron_file
+                path = self.cronjob_base_path + check_path + "/" + self.cronjob_logrotate_cron_file
                 if os.path.exists(path):
                     os.remove(path)
             if os.path.exists(self.cronjob_etc_config):
