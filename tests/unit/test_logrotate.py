@@ -38,8 +38,22 @@ class TestLogrotateHelper():
 
     def test_modify_content(self, logrotate):
         """Test the modify_content method."""
+        file_path = "/var/log/myrandom"
         logrotate.retention = 42
+        logrotate.override = []
+        logrotate.override_files = []
         contents = '/log/some.log {\n  rotate 123\n  daily\n}\n/log/other.log {\n  rotate 456\n  weekly\n}'
-        mod_contents = logrotate.modify_content(logrotate, contents)
+        mod_contents = logrotate.modify_content(logrotate, contents, file_path)
+        expected_contents = '/log/some.log {\n  rotate 42\n  daily\n}\n\n/log/other.log {\n  rotate 6\n  weekly\n}\n'
+        assert mod_contents == expected_contents
+
+    def test_modify_content_override(self, logrotate):
+        """Test the modify_content method."""
+        file_path = "/log/some.log"
+        logrotate.retention = 42
+        logrotate.override = []
+        logrotate.override_files = []
+        contents = '/log/some.log {\n  rotate 123\n  daily\n}\n/log/other.log {\n  rotate 456\n  weekly\n}'
+        mod_contents = logrotate.modify_content(logrotate, contents, file_path)
         expected_contents = '/log/some.log {\n  rotate 42\n  daily\n}\n\n/log/other.log {\n  rotate 6\n  weekly\n}\n'
         assert mod_contents == expected_contents

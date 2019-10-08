@@ -13,6 +13,9 @@ class LogrotateHelper:
     def __init__(self):
         """Init function."""
         self.retention = hookenv.config('logrotate-retention')
+        self.override = hookenv.config('override')
+        self.override_files = self.get_override_files()
+        self.override_settings = self.get_override_settings()
 
     def read_config(self):
         """Read changes from disk.
@@ -35,7 +38,7 @@ class LogrotateHelper:
             content = logrotate_file.read()
             logrotate_file.close()
 
-            mod_contents = self.modify_content(content)
+            mod_contents = self.modify_content(content, file_path)
 
             mod_contents = self.modify_header(mod_contents)
 
@@ -43,7 +46,20 @@ class LogrotateHelper:
             logrotate_file.write(mod_contents)
             logrotate_file.close()
 
-    def modify_content(self, content):
+    def get_override_files(self):
+        """Return paths for files to be overrided."""
+        return [path['path'] for path in self.override
+                if self.override.keys() == ['path', 'rotate', 'interval']]
+
+    def get_override_settings(self, file_path):
+        """Return paths for files to be overrided."""
+        for override_entry in self.override:
+            if file_path == override_entry['path']:
+                rotate = override_entry['rotate']
+                interval = override_entry['interval']
+        return {'rotate': rotate, 'interval': interval}
+
+    def modify_content(self, content, file_path):
         """Edit the content of a logrotate file."""
         # Split the contents in a logrotate file in separate entries (if
         # multiple are found in the file) and put in a list for further
@@ -62,16 +78,26 @@ class LogrotateHelper:
         # the rotate option to the appropriate value
         results = []
         for item in items:
-            count = self.calculate_count(item, self.retention)
+            # Override rotate, if defined
+            if file_path in self.override_files:
+                count = self.override_settings['rotate']
+            else:
+                count = self.calculate_count(item, self.retention)
             rotate = 'rotate {}'.format(count)
             # if rotate is missing, add it as last line in the item entry
             if 'rotate' in item:
                 result = re.sub(r'rotate \d+\.?[0-9]*', rotate, item)
             else:
-                result = item.replace('}', rotate + '\n}')
+                result = item.replace('}', '    ' + rotate + '\n}')
             results.append(result)
 
         results = '\n'.join(results)
+
+        # Override interval, if defined
+        if file_path in self.override_files:
+            interval = self.override_settings['interval']
+            regex = re.compile("(daily|weekly|monthly|yearly)")
+            results = regex.sub(interval, results)
 
         return results
 
@@ -98,10 +124,10 @@ class LogrotateHelper:
             count = retention
         # Weekly rounding up, as weeks are 7 days
         if 'weekly' in item:
-            count = int(round(retention/7))
+            count = int(round(retention / 7))
         # Monthly default 30 days and round up because of 28/31 days months
         if 'monthly' in item:
-            count = int(round(retention/30))
+            count = int(round(retention / 30))
         # For every 360 days - add 1 year
         if 'yearly' in item:
             count = retention // 360 + 1 if retention > 360 else 1
