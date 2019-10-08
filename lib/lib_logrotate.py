@@ -1,4 +1,5 @@
 """Logrotate module."""
+import json
 import os
 import re
 
@@ -13,9 +14,9 @@ class LogrotateHelper:
     def __init__(self):
         """Init function."""
         self.retention = hookenv.config('logrotate-retention')
-        self.override = hookenv.config('override')
+        self.override_interval_regex = re.compile("(daily|weekly|monthly|yearly)")
+        self.override = json.loads(hookenv.config('override'))
         self.override_files = self.get_override_files()
-        self.override_settings = self.get_override_settings()
 
     def read_config(self):
         """Read changes from disk.
@@ -49,10 +50,13 @@ class LogrotateHelper:
     def get_override_files(self):
         """Return paths for files to be overrided."""
         return [path['path'] for path in self.override
-                if self.override.keys() == ['path', 'rotate', 'interval']]
+                if set(path.keys()) == {'path', 'rotate', 'interval'}]
 
     def get_override_settings(self, file_path):
-        """Return paths for files to be overrided."""
+        """Return settings in key:value pairs for the file_path requested.
+
+        param: file_path: path to the file for manual settings.
+        """
         for override_entry in self.override:
             if file_path == override_entry['path']:
                 rotate = override_entry['rotate']
@@ -80,7 +84,7 @@ class LogrotateHelper:
         for item in items:
             # Override rotate, if defined
             if file_path in self.override_files:
-                count = self.override_settings['rotate']
+                count = self.get_override_settings(file_path)['rotate']
             else:
                 count = self.calculate_count(item, self.retention)
             rotate = 'rotate {}'.format(count)
@@ -95,9 +99,8 @@ class LogrotateHelper:
 
         # Override interval, if defined
         if file_path in self.override_files:
-            interval = self.override_settings['interval']
-            regex = re.compile("(daily|weekly|monthly|yearly)")
-            results = regex.sub(interval, results)
+            interval = self.get_override_settings(file_path)['interval']
+            results = self.override_interval_regex.sub(interval, results)
 
         return results
 
