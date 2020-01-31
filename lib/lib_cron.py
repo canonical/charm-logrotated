@@ -79,10 +79,13 @@ class CronHelper:
 
 def main():
     """Ran by cron."""
+    hookenv.status_set('maintenance', 'Executing cron job.')
     cronhelper = CronHelper()
     cronhelper.read_config()
     cronhelper.update_logrotate_etc()
     cronhelper.install_cronjob()
+    hookenv.status_set('active', 'Unit is ready.')
+
 
 
 if __name__ == '__main__':
