@@ -51,8 +51,7 @@ class CronHelper:
             python_venv_path = os.getcwd().replace('charm', '') + '.venv/bin/python3'
             # upgrade to template if logic increases
             cron_file = open(cron_file_path, 'w')
-            cron_job = """
-#!/bin/bash
+            cron_job = """#!/bin/bash
 /usr/bin/sudo /usr/bin/juju-run {} "{} {}"
 """.format(logrotate_unit, python_venv_path, cronjob_path)
             cron_file.write(cron_job)
