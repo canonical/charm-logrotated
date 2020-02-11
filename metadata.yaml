@@ -13,6 +13,7 @@ subordinate: true
 series:
   - xenial
   - bionic
+  - focal
 tags:
     - misc
 requires:
