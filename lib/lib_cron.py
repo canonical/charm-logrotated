@@ -1,6 +1,8 @@
 """Cron helper module."""
 import os
 
+from charmhelpers.core import hookenv
+
 from lib_logrotate import LogrotateHelper
 
 
@@ -40,14 +42,19 @@ class CronHelper:
         clean_up_file = self.cronjob_frequency if self.cronjob_enabled else -1
 
         if self.cronjob_enabled is True:
-            path_to_lib = os.path.realpath(__file__)
+            cronjob_path = os.path.realpath(__file__)
             cron_file_path = self.cronjob_base_path\
                 + self.cronjob_check_paths[clean_up_file]\
                 + "/" + self.cronjob_logrotate_cron_file
 
+            logrotate_unit = hookenv.local_unit()
+            python_venv_path = os.getcwd().replace('charm', '') + '.venv/bin/python3'
             # upgrade to template if logic increases
             cron_file = open(cron_file_path, 'w')
-            cron_file.write("#!/bin/sh\n/usr/bin/python3 " + path_to_lib + "\n\n")
+            cron_job = """#!/bin/bash
+/usr/bin/sudo /usr/bin/juju-run {} "{} {}"
+""".format(logrotate_unit, python_venv_path, cronjob_path)
+            cron_file.write(cron_job)
             cron_file.close()
             os.chmod(cron_file_path, 700)
 
@@ -72,10 +79,13 @@ class CronHelper:
 
 def main():
     """Ran by cron."""
+    hookenv.status_set('maintenance', 'Executing cron job.')
     cronhelper = CronHelper()
     cronhelper.read_config()
     cronhelper.update_logrotate_etc()
     cronhelper.install_cronjob()
+    hookenv.status_set('active', 'Unit is ready.')
+
 
 
 if __name__ == '__main__':
