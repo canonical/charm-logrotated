@@ -1,6 +1,8 @@
 #!/usr/bin/python3.6
+"""Main module for functional testing."""
 
 import os
+
 import pytest
 
 pytestmark = pytest.mark.asyncio
@@ -16,7 +18,7 @@ SERIES = ['xenial',
 @pytest.fixture(scope='module',
                 params=SERIES)
 async def deploy_app(request, model):
-    '''Deploys the logrotate charm as a subordinate of ubuntu'''
+    """Deploy the logrotate charm as a subordinate of ubuntu."""
     release = request.param
 
     await model.deploy(
@@ -42,7 +44,7 @@ async def deploy_app(request, model):
 
 @pytest.fixture(scope='module')
 async def unit(deploy_app):
-    '''Returns the logrotate unit we've deployed'''
+    """Return the logrotate unit we've deployed."""
     return deploy_app.units.pop()
 
 #########
@@ -51,4 +53,5 @@ async def unit(deploy_app):
 
 
 async def test_deploy(deploy_app):
+    """Tst the deployment."""
     assert deploy_app.status == 'active'

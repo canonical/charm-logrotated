@@ -25,3 +25,13 @@ options:
       If logrotate-cronjob is True, then this value is used to determine the
       location of the cronjob file.
       Valid options are 'hourly', 'daily', 'weekly', 'monthly'.
+  override:
+    type: string
+    default: '[]'
+    description: |
+      JSON-formatted string with override options for files in /etc/logrotate.d/
+      This override takes precendence over all other options. Format is:
+      [ {"path": "/etc/logrotate.d/rotatefile", "rotate": 5, "interval": "weekly"}, {}, ... ]
+      Mind the quotes for JSON properties/values!
+      Valid options for rotate: any integer value
+      Valid options for interval: 'daily', 'weekly', 'monthly', 'yearly'
