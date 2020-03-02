@@ -1,4 +1,4 @@
-name: logrotate
+name: logrotated
 maintainer: Llama (LMA) Charmers <llama-charmers@lists.ubuntu.com> 
 summary: Logrotate configuration editor
 description: |
