@@ -1,5 +1,5 @@
 name: logrotate
-maintainer: Diko Parvanov <diko.parvanov@canonical.com>
+maintainer: Llama (LMA) Charmers <llama-charmers@lists.ubuntu.com> 
 summary: Logrotate configuration editor
 description: |
   logrotate is designed to ease administration of systems that generate
