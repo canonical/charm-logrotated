@@ -1,36 +1,59 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ../.venv/bin/python3
 """Actions module."""
 
 import os
 import sys
 
-from charmhelpers.core import hookenv
+
+_path = os.path.dirname(os.path.realpath(__file__))
+_hooks = os.path.abspath(os.path.join(_path, '../hooks'))
+_lib = os.path.abspath(os.path.join(_path, '../lib'))
+
+
+def _add_path(path):
+    if path not in sys.path:
+        sys.path.insert(1, path)
+
+_add_path(_hooks)
+_add_path(_lib)
+
+from charmhelpers.core.hookenv import action_fail
 
 from lib_cron import CronHelper
 
 from lib_logrotate import LogrotateHelper
 
-sys.path.insert(0, os.path.join(os.environ["CHARM_DIR"], "lib"))
-
-hooks = hookenv.Hooks()
 logrotate = LogrotateHelper()
 cron = CronHelper()
 
 
-@hooks.hook("update-logrotate-files")
-def update_logrotate_files():
+def update_logrotate_files(args):
     """Update the logrotate files."""
     logrotate.read_config()
     logrotate.modify_configs()
 
 
-@hooks.hook("update-cronjob")
-def update_cronjob():
+def update_cronjob(args):
     """Update the cronjob file."""
     cron.read_config()
     cron.install_cronjob()
 
+ACTIONS = {"update-cronjob": update_cronjob, "update-logrotate-files": update_logrotate_files}
+
+
+def main(args):
+    action_name = os.path.basename(args[0])
+    try:
+        action = ACTIONS[action_name]
+    except KeyError:
+        return "Action {} undefined".format(action_name)
+    else:
+        try:
+            action(args)
+        except Exception as e:
+            action_fail(str(e))
+
 
 if __name__ == "__main__":
-    """Main function."""
-    hooks.execute(sys.argv)
+    sys.exit(main(sys.argv))
+
