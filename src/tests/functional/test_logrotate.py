@@ -29,7 +29,7 @@ async def deploy_app(request, model):
         channel='stable'
     )
     logrotate_app = await model.deploy(
-        '{}/builds/logrotate'.format(os.getenv('JUJU_REPOSITORY')),
+        '{}/logrotate'.format(os.getenv('CHARM_BUILD_DIR')),
         application_name='logrotate-' + release,
         series=release,
         num_units=0,
