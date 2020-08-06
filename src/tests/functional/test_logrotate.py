@@ -6,47 +6,43 @@ import os
 import pytest
 
 pytestmark = pytest.mark.asyncio
-SERIES = ['xenial',
-          'bionic',
-          'focal',
-          ]
+SERIES = [
+    "xenial",
+    "bionic",
+    "focal",
+]
 
 
 ############
 # FIXTURES #
 ############
 
-@pytest.fixture(scope='module',
-                params=SERIES)
+
+@pytest.fixture(scope="module", params=SERIES)
 async def deploy_app(request, model):
     """Deploy the logrotate charm as a subordinate of ubuntu."""
     release = request.param
 
     await model.deploy(
-        'ubuntu',
-        application_name='ubuntu-' + release,
-        series=release,
-        channel='stable'
+        "ubuntu", application_name="ubuntu-" + release, series=release, channel="stable"
     )
     logrotate_app = await model.deploy(
-        '{}/logrotated'.format(os.getenv('CHARM_BUILD_DIR')),
-        application_name='logrotate-' + release,
+        "{}/logrotated".format(os.getenv("CHARM_BUILD_DIR")),
+        application_name="logrotate-" + release,
         series=release,
         num_units=0,
     )
-    await model.add_relation(
-        'ubuntu-' + release,
-        'logrotate-' + release
-    )
+    await model.add_relation("ubuntu-" + release, "logrotate-" + release)
 
-    await model.block_until(lambda: logrotate_app.status == 'active')
+    await model.block_until(lambda: logrotate_app.status == "active")
     yield logrotate_app
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 async def unit(deploy_app):
     """Return the logrotate unit we've deployed."""
     return deploy_app.units.pop()
+
 
 #########
 # TESTS #
@@ -55,4 +51,4 @@ async def unit(deploy_app):
 
 async def test_deploy(deploy_app):
     """Tst the deployment."""
-    assert deploy_app.status == 'active'
+    assert deploy_app.status == "active"

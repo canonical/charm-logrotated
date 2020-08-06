@@ -13,7 +13,7 @@ logrotate = LogrotateHelper()
 cron = CronHelper()
 
 
-@when_not('logrotate.installed')
+@when_not("logrotate.installed")
 def install_logrotate():
     """Install the logrotate charm."""
     try:
@@ -23,32 +23,32 @@ def install_logrotate():
         logrotate.modify_configs()
         cron.install_cronjob()
     except Exception as ex:
-        hookenv.status_set('blocked', str(ex))
-    hookenv.status_set('active', 'Unit is ready.')
-    set_flag('logrotate.installed')
+        hookenv.status_set("blocked", str(ex))
+    hookenv.status_set("active", "Unit is ready.")
+    set_flag("logrotate.installed")
 
 
-@when('config.changed')
+@when("config.changed")
 def config_changed():
     """Run when configuration changes."""
     try:
         dump_config_to_disk()
         cron.read_config()
         logrotate.read_config()
-        hookenv.status_set('maintenance', 'Modifying configs.')
+        hookenv.status_set("maintenance", "Modifying configs.")
         logrotate.modify_configs()
         cron.install_cronjob()
     except Exception as ex:
-        hookenv.status_set('blocked', str(ex))
-    hookenv.status_set('active', 'Unit is ready.')
+        hookenv.status_set("blocked", str(ex))
+    hookenv.status_set("active", "Unit is ready.")
 
 
 def dump_config_to_disk():
     """Dump configurations to disk."""
-    cronjob_enabled = hookenv.config('logrotate-cronjob')
-    cronjob_frequency = hookenv.config('logrotate-cronjob-frequency')
-    logrotate_retention = hookenv.config('logrotate-retention')
-    with open('/etc/logrotate_cronjob_config', 'w+') as cronjob_config_file:
-        cronjob_config_file.write(str(cronjob_enabled) + '\n')
-        cronjob_config_file.write(str(cronjob_frequency) + '\n')
-        cronjob_config_file.write(str(logrotate_retention) + '\n')
+    cronjob_enabled = hookenv.config("logrotate-cronjob")
+    cronjob_frequency = hookenv.config("logrotate-cronjob-frequency")
+    logrotate_retention = hookenv.config("logrotate-retention")
+    with open("/etc/logrotate_cronjob_config", "w+") as cronjob_config_file:
+        cronjob_config_file.write(str(cronjob_enabled) + "\n")
+        cronjob_config_file.write(str(cronjob_frequency) + "\n")
+        cronjob_config_file.write(str(logrotate_retention) + "\n")

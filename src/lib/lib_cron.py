@@ -24,9 +24,9 @@ class CronHelper:
         """
         config_file = open(self.cronjob_etc_config, "r")
         lines = config_file.read()
-        lines = lines.split('\n')
+        lines = lines.split("\n")
 
-        if lines[0] == 'True':
+        if lines[0] == "True":
             self.cronjob_enabled = True
         else:
             self.cronjob_enabled = False
@@ -43,17 +43,22 @@ class CronHelper:
 
         if self.cronjob_enabled is True:
             cronjob_path = os.path.realpath(__file__)
-            cron_file_path = self.cronjob_base_path\
-                + self.cronjob_check_paths[clean_up_file]\
-                + "/" + self.cronjob_logrotate_cron_file
+            cron_file_path = (
+                self.cronjob_base_path
+                + self.cronjob_check_paths[clean_up_file]
+                + "/"
+                + self.cronjob_logrotate_cron_file
+            )
 
             logrotate_unit = hookenv.local_unit()
-            python_venv_path = os.getcwd().replace('charm', '') + '.venv/bin/python3'
+            python_venv_path = os.getcwd().replace("charm", "") + ".venv/bin/python3"
             # upgrade to template if logic increases
-            cron_file = open(cron_file_path, 'w')
+            cron_file = open(cron_file_path, "w")
             cron_job = """#!/bin/bash
 /usr/bin/sudo /usr/bin/juju-run {} "{} {}"
-""".format(logrotate_unit, python_venv_path, cronjob_path)
+""".format(
+                logrotate_unit, python_venv_path, cronjob_path
+            )
             cron_file.write(cron_job)
             cron_file.close()
             os.chmod(cron_file_path, 700)
@@ -64,7 +69,12 @@ class CronHelper:
         """Cleanup previous config."""
         if frequency == -1:
             for check_path in self.cronjob_check_paths:
-                path = self.cronjob_base_path + check_path + "/" + self.cronjob_logrotate_cron_file
+                path = (
+                    self.cronjob_base_path
+                    + check_path
+                    + "/"
+                    + self.cronjob_logrotate_cron_file
+                )
                 if os.path.exists(path):
                     os.remove(path)
             if os.path.exists(self.cronjob_etc_config):
@@ -79,13 +89,13 @@ class CronHelper:
 
 def main():
     """Ran by cron."""
-    hookenv.status_set('maintenance', 'Executing cron job.')
+    hookenv.status_set("maintenance", "Executing cron job.")
     cronhelper = CronHelper()
     cronhelper.read_config()
     cronhelper.update_logrotate_etc()
     cronhelper.install_cronjob()
-    hookenv.status_set('active', 'Unit is ready.')
+    hookenv.status_set("active", "Unit is ready.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
