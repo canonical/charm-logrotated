@@ -11,6 +11,7 @@ SERIES = ['xenial',
           pytest.param('cosmic', marks=pytest.mark.xfail(reason='canary')),
           ]
 
+
 ############
 # FIXTURES #
 ############

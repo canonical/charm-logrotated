@@ -87,6 +87,5 @@ def main():
     hookenv.status_set('active', 'Unit is ready.')
 
 
-
 if __name__ == '__main__':
     main()
