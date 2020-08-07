@@ -8,7 +8,7 @@ import pytest
 pytestmark = pytest.mark.asyncio
 SERIES = ['xenial',
           'bionic',
-          pytest.param('cosmic', marks=pytest.mark.xfail(reason='canary')),
+          'focal',
           ]
 
 
@@ -29,7 +29,7 @@ async def deploy_app(request, model):
         channel='stable'
     )
     logrotate_app = await model.deploy(
-        '{}/logrotate'.format(os.getenv('CHARM_BUILD_DIR')),
+        '{}/logrotated'.format(os.getenv('CHARM_BUILD_DIR')),
         application_name='logrotate-' + release,
         series=release,
         num_units=0,
