@@ -13,9 +13,9 @@ class LogrotateHelper:
 
     def __init__(self):
         """Init function."""
-        self.retention = hookenv.config('logrotate-retention')
+        self.retention = hookenv.config("logrotate-retention")
         self.override_interval_regex = re.compile("(daily|weekly|monthly|yearly)")
-        self.override = json.loads(hookenv.config('override'))
+        self.override = json.loads(hookenv.config("override"))
         self.override_files = self.get_override_files()
 
     def read_config(self):
@@ -26,7 +26,7 @@ class LogrotateHelper:
         """
         config_file = open("/etc/logrotate_cronjob_config", "r")
         lines = config_file.read()
-        lines = lines.split('\n')
+        lines = lines.split("\n")
 
         self.retention = int(lines[2])
 
@@ -35,7 +35,7 @@ class LogrotateHelper:
         for config_file in os.listdir(LOGROTATE_DIR):
             file_path = LOGROTATE_DIR + config_file
 
-            logrotate_file = open(file_path, 'r')
+            logrotate_file = open(file_path, "r")
             content = logrotate_file.read()
             logrotate_file.close()
 
@@ -43,14 +43,17 @@ class LogrotateHelper:
 
             mod_contents = self.modify_header(mod_contents)
 
-            logrotate_file = open(file_path, 'w')
+            logrotate_file = open(file_path, "w")
             logrotate_file.write(mod_contents)
             logrotate_file.close()
 
     def get_override_files(self):
         """Return paths for files to be overrided."""
-        return [path['path'] for path in self.override
-                if set(path.keys()) == {'path', 'rotate', 'interval'}]
+        return [
+            path["path"]
+            for path in self.override
+            if set(path.keys()) == {"path", "rotate", "interval"}
+        ]
 
     def get_override_settings(self, file_path):
         """Return settings in key:value pairs for the file_path requested.
@@ -58,22 +61,22 @@ class LogrotateHelper:
         param: file_path: path to the file for manual settings.
         """
         for override_entry in self.override:
-            if file_path == override_entry['path']:
-                rotate = override_entry['rotate']
-                interval = override_entry['interval']
-        return {'rotate': rotate, 'interval': interval}
+            if file_path == override_entry["path"]:
+                rotate = override_entry["rotate"]
+                interval = override_entry["interval"]
+        return {"rotate": rotate, "interval": interval}
 
     def modify_content(self, content, file_path):
         """Edit the content of a logrotate file."""
         # Split the contents in a logrotate file in separate entries (if
         # multiple are found in the file) and put in a list for further
         # processing
-        split = content.split('\n')
+        split = content.split("\n")
         items = []
         string = ""
         for row in split:
-            string += row + '\n'
-            if '}' in row:
+            string += row + "\n"
+            if "}" in row:
                 items.append(string)
                 string = ""
                 continue
@@ -84,35 +87,37 @@ class LogrotateHelper:
         for item in items:
             # Override rotate, if defined
             if file_path in self.override_files:
-                count = self.get_override_settings(file_path)['rotate']
+                count = self.get_override_settings(file_path)["rotate"]
             else:
                 count = self.calculate_count(item, self.retention)
-            rotate = 'rotate {}'.format(count)
+            rotate = "rotate {}".format(count)
             # if rotate is missing, add it as last line in the item entry
-            if 'rotate' in item:
-                result = re.sub(r'rotate \d+\.?[0-9]*', rotate, item)
+            if "rotate" in item:
+                result = re.sub(r"rotate \d+\.?[0-9]*", rotate, item)
             else:
-                result = item.replace('}', '    ' + rotate + '\n}')
+                result = item.replace("}", "    " + rotate + "\n}")
             results.append(result)
 
-        results = '\n'.join(results)
+        results = "\n".join(results)
 
         # Override interval, if defined
         if file_path in self.override_files:
-            interval = self.get_override_settings(file_path)['interval']
+            interval = self.get_override_settings(file_path)["interval"]
             results = self.override_interval_regex.sub(interval, results)
 
         return results
 
     def modify_header(self, content):
         """Add Juju headers to the file."""
-        header = "# Configuration file maintained by Juju. Local changes may be overwritten"
+        header = (
+            "# Configuration file maintained by Juju. Local changes may be overwritten"
+        )
 
-        split = content.split('\n')
+        split = content.split("\n")
         if split[0].startswith(header):
             result = content
         else:
-            result = header + '\n' + content
+            result = header + "\n" + content
 
         return result
 
@@ -123,16 +128,16 @@ class LogrotateHelper:
         # better to keep the logs than lose them
         count = retention
         # Daily 1:1 to configuration retention period (in days)
-        if 'daily' in item:
+        if "daily" in item:
             count = retention
         # Weekly rounding up, as weeks are 7 days
-        if 'weekly' in item:
+        if "weekly" in item:
             count = int(round(retention / 7))
         # Monthly default 30 days and round up because of 28/31 days months
-        if 'monthly' in item:
+        if "monthly" in item:
             count = int(round(retention / 30))
         # For every 360 days - add 1 year
-        if 'yearly' in item:
+        if "yearly" in item:
             count = retention // 360 + 1 if retention > 360 else 1
 
         return count

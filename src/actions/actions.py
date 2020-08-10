@@ -10,7 +10,7 @@ from lib_cron import CronHelper
 
 from lib_logrotate import LogrotateHelper
 
-sys.path.insert(0, os.path.join(os.environ['CHARM_DIR'], 'lib'))
+sys.path.insert(0, os.path.join(os.environ["CHARM_DIR"], "lib"))
 
 hooks = hookenv.Hooks()
 logrotate = LogrotateHelper()

@@ -1,7 +1,7 @@
 """Main unit test module."""
 
 
-class TestLogrotateHelper():
+class TestLogrotateHelper:
     """Main test class."""
 
     def test_pytest(self):
@@ -11,28 +11,28 @@ class TestLogrotateHelper():
     def test_daily_retention_count(self, logrotate):
         """Test daily retention count."""
         logrotate.retention = 90
-        contents = '/var/log/some.log {\n  rotate 123\n  daily\n}'
+        contents = "/var/log/some.log {\n  rotate 123\n  daily\n}"
         count = logrotate.calculate_count(contents, logrotate.retention)
         assert count == 90
 
     def test_weekly_retention_count(self, logrotate):
         """Test weekly retention count."""
         logrotate.retention = 21
-        contents = '/var/log/some.log {\n  rotate 123\n  weekly\n}'
+        contents = "/var/log/some.log {\n  rotate 123\n  weekly\n}"
         count = logrotate.calculate_count(contents, logrotate.retention)
         assert count == 3
 
     def test_monthly_retention_count(self, logrotate):
         """Test monthly retention count."""
         logrotate.retention = 60
-        contents = '/var/log/some.log {\n  rotate 123\n  monthly\n}'
+        contents = "/var/log/some.log {\n  rotate 123\n  monthly\n}"
         count = logrotate.calculate_count(contents, logrotate.retention)
         assert count == 2
 
     def test_yearly_retention_count(self, logrotate):
         """Test yearly retention count."""
         logrotate.retention = 180
-        contents = '/var/log/some.log {\n  rotate 123\n  yearly\n}'
+        contents = "/var/log/some.log {\n  rotate 123\n  yearly\n}"
         count = logrotate.calculate_count(contents, logrotate.retention)
         assert count == 1
 
@@ -42,9 +42,15 @@ class TestLogrotateHelper():
         logrotate.retention = 42
         logrotate.override = []
         logrotate.override_files = []
-        contents = '/log/some.log {\n  rotate 123\n  daily\n}\n/log/other.log {\n  rotate 456\n  weekly\n}'
+        contents = (
+            "/log/some.log {\n  rotate 123\n  daily\n}\n"
+            "/log/other.log {\n  rotate 456\n  weekly\n}"
+        )
         mod_contents = logrotate.modify_content(logrotate, contents, file_path)
-        expected_contents = '/log/some.log {\n  rotate 42\n  daily\n}\n\n/log/other.log {\n  rotate 6\n  weekly\n}\n'
+        expected_contents = (
+            "/log/some.log {\n  rotate 42\n  daily\n}\n\n"
+            "/log/other.log {\n  rotate 6\n  weekly\n}\n"
+        )
         assert mod_contents == expected_contents
 
     def test_modify_content_override(self, logrotate):
@@ -53,7 +59,13 @@ class TestLogrotateHelper():
         logrotate.retention = 42
         logrotate.override = []
         logrotate.override_files = []
-        contents = '/log/some.log {\n  rotate 123\n  daily\n}\n/log/other.log {\n  rotate 456\n  weekly\n}'
+        contents = (
+            "/log/some.log {\n  rotate 123\n  daily\n}\n"
+            "/log/other.log {\n  rotate 456\n  weekly\n}"
+        )
         mod_contents = logrotate.modify_content(logrotate, contents, file_path)
-        expected_contents = '/log/some.log {\n  rotate 42\n  daily\n}\n\n/log/other.log {\n  rotate 6\n  weekly\n}\n'
+        expected_contents = (
+            "/log/some.log {\n  rotate 42\n  daily\n}\n\n"
+            "/log/other.log {\n  rotate 6\n  weekly\n}\n"
+        )
         assert mod_contents == expected_contents
