@@ -5,6 +5,7 @@ import mock
 
 import pytest
 
+
 # If layer options are used, add this to ${fixture}
 # and import layer in logrotate
 @pytest.fixture
