@@ -77,6 +77,7 @@ class LogrotateHelper:
         for row in split:
             string += row + "\n"
             if "}" in row:
+                string = string[string.find('/'):]
                 items.append(string)
                 string = ""
                 continue
