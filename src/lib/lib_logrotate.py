@@ -77,7 +77,7 @@ class LogrotateHelper:
         for row in split:
             string += row + "\n"
             if "}" in row:
-                string = string[string.find('/'):]
+                string = "\n" + string.strip()
                 items.append(string)
                 string = ""
                 continue
@@ -99,7 +99,7 @@ class LogrotateHelper:
                 result = item.replace("}", "    " + rotate + "\n}")
             results.append(result)
 
-        results = "\n".join(results)
+        results = "\n".join(results) + "\n"
 
         # Override interval, if defined
         if file_path in self.override_files:
