@@ -48,7 +48,24 @@ class TestLogrotateHelper:
         )
         mod_contents = logrotate.modify_content(logrotate, contents, file_path)
         expected_contents = (
-            "/log/some.log {\n  rotate 42\n  daily\n}\n\n"
+            "\n/log/some.log {\n  rotate 42\n  daily\n}\n\n"
+            "/log/other.log {\n  rotate 6\n  weekly\n}\n"
+        )
+        assert mod_contents == expected_contents
+
+    def test_empty_line_additions(self, logrotate):
+        """Test the modify_content method."""
+        file_path = "/var/log/myrandom"
+        logrotate.retention = 42
+        logrotate.override = []
+        logrotate.override_files = []
+        contents = (
+            "\n\n\n\n\n/log/some.log {\n  rotate 123\n  daily\n}\n\n"
+            "\n\n\n/log/other.log {\n  rotate 456\n  weekly\n}\n"
+        )
+        mod_contents = logrotate.modify_content(logrotate, contents, file_path)
+        expected_contents = (
+            "\n/log/some.log {\n  rotate 42\n  daily\n}\n\n"
             "/log/other.log {\n  rotate 6\n  weekly\n}\n"
         )
         assert mod_contents == expected_contents
@@ -65,7 +82,7 @@ class TestLogrotateHelper:
         )
         mod_contents = logrotate.modify_content(logrotate, contents, file_path)
         expected_contents = (
-            "/log/some.log {\n  rotate 42\n  daily\n}\n\n"
+            "\n/log/some.log {\n  rotate 42\n  daily\n}\n\n"
             "/log/other.log {\n  rotate 6\n  weekly\n}\n"
         )
         assert mod_contents == expected_contents
