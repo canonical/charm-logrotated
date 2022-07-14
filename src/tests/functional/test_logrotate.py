@@ -10,6 +10,7 @@ SERIES = [
     "xenial",
     "bionic",
     "focal",
+    "jammy"
 ]
 
 
