@@ -10,11 +10,7 @@ description: |
   This charm can be deployed alongside principle charms to enable logrotate
   management across deployed services.
 subordinate: true
-series:
-  - xenial
-  - bionic
-  - focal
-  - jammy
+series: []
 tags:
     - misc
 requires:

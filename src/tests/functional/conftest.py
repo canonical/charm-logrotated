@@ -19,9 +19,10 @@ from juju.controller import Controller
 from juju_tools import JujuTools
 
 import pytest
+import pytest_asyncio
 
 
-@pytest.fixture(scope="module")
+@pytest_asyncio.fixture(scope="module")
 def event_loop():
     """Override the default pytest event loop.
 
@@ -35,7 +36,7 @@ def event_loop():
     asyncio.set_event_loop(None)
 
 
-@pytest.fixture(scope="module")
+@pytest_asyncio.fixture(scope="module")
 async def controller():
     """Connect to the current controller."""
     _controller = Controller()
@@ -44,7 +45,7 @@ async def controller():
     await _controller.disconnect()
 
 
-@pytest.fixture(scope="module")
+@pytest_asyncio.fixture(scope="module")
 async def model(controller):
     """Live only for the duration of the test."""
     model_name = "functest-{}".format(str(uuid.uuid4())[-12:])
@@ -65,7 +66,7 @@ async def model(controller):
             await asyncio.sleep(1)
 
 
-@pytest.fixture(scope="module")
+@pytest_asyncio.fixture(scope="module")
 async def jujutools(controller, model):
     """Juju tools."""
     tools = JujuTools(controller, model)
