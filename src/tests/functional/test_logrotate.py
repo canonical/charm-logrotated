@@ -4,6 +4,7 @@
 import os
 
 import pytest
+import pytest_asyncio
 
 pytestmark = pytest.mark.asyncio
 SERIES = [
@@ -19,7 +20,7 @@ SERIES = [
 ############
 
 
-@pytest.fixture(scope="module", params=SERIES)
+@pytest_asyncio.fixture(scope="module", params=SERIES)
 async def deploy_app(request, model):
     """Deploy the logrotate charm as a subordinate of ubuntu."""
     release = request.param
@@ -39,7 +40,7 @@ async def deploy_app(request, model):
     yield logrotate_app
 
 
-@pytest.fixture(scope="module")
+@pytest_asyncio.fixture(scope="module")
 async def unit(deploy_app):
     """Return the logrotate unit we've deployed."""
     return deploy_app.units.pop()
