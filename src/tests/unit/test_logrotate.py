@@ -138,6 +138,22 @@ class TestLogrotateHelper:
         )
         assert mod_contents == expected_contents
 
+    @pytest.mark.parametrize("header_count", [0, 1, 2, 10])
+    def test_modify_header(self, logrotate, header_count):
+        """Test the modify_header method works and is idempotent."""
+        header = "# Configuration file maintained by Juju. Local changes may be overwritten\n"  # noqa
+        content_body = (
+            "\n/log/some.log {\n  rotate 42\n  daily\n}\n\n"
+            "/log/other.log {\n  rotate 6\n  weekly\n}\n"
+        )
+        content = (header * header_count) + content_body
+        expected_content = (
+            header + "/log/some.log {\n  rotate 42\n  daily\n}\n"
+            "/log/other.log {\n  rotate 6\n  weekly\n}\n"
+        )
+        modified_content = logrotate.modify_header(logrotate, content)
+        assert modified_content == expected_content
+
 
 class TestCronHelper:
     """Main cron test class."""
