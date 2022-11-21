@@ -118,12 +118,14 @@ class TestLogrotateHelper:
         logrotate.retention = 42
         logrotate.override = []
         logrotate.override_files = []
+        # fmt: off
         contents = (
             "/log/some.log {\n"
             "  postrotate\n"
             "    /bin/script\n"
             "  endscript\n}\n"
         )
+        # fmt: on
         mod_contents = logrotate.modify_content(logrotate, contents, file_path)
         expected_contents = (
             "\n/log/some.log {\n"

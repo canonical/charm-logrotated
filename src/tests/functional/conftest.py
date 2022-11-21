@@ -18,7 +18,6 @@ from juju.controller import Controller
 
 from juju_tools import JujuTools
 
-import pytest
 import pytest_asyncio
 
 
