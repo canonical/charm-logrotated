@@ -86,3 +86,50 @@ class TestLogrotateHelper:
             "/log/other.log {\n  rotate 6\n  weekly\n}\n"
         )
         assert mod_contents == expected_contents
+
+    def test_modify_content_with_postrotate_sub(self, logrotate):
+        """Test modify_content substitutes if postrotate exists."""
+        file_path = "/log/some.log"
+        logrotate.retention = 42
+        logrotate.override = []
+        logrotate.override_files = []
+        contents = (
+            "/log/some.log {\n"
+            "  postrotate\n"
+            "    /bin/script\n"
+            "  endscript\n"
+            "  rotate 123\n"
+            "  daily\n}\n"
+        )
+        mod_contents = logrotate.modify_content(logrotate, contents, file_path)
+        expected_contents = (
+            "\n/log/some.log {\n"
+            "  postrotate\n"
+            "    /bin/script\n"
+            "  endscript\n"
+            "  rotate 42\n"
+            "  daily\n}\n"
+        )
+        assert mod_contents == expected_contents
+
+    def test_modify_content_with_postrotate_append(self, logrotate):
+        """Test the modify_content appends if postrotate exists."""
+        file_path = "/log/some.log"
+        logrotate.retention = 42
+        logrotate.override = []
+        logrotate.override_files = []
+        contents = (
+            "/log/some.log {\n"
+            "  postrotate\n"
+            "    /bin/script\n"
+            "  endscript\n}\n"
+        )
+        mod_contents = logrotate.modify_content(logrotate, contents, file_path)
+        expected_contents = (
+            "\n/log/some.log {\n"
+            "  postrotate\n"
+            "    /bin/script\n"
+            "  endscript\n"
+            "    rotate 42\n}\n"
+        )
+        assert mod_contents == expected_contents
