@@ -85,6 +85,7 @@ class LogrotateHelper:
         # Work on each item - checking the rotation configuration and setting
         # the rotate option to the appropriate value
         results = []
+        rotate_pattern = re.compile(r"rotate \d+\.?[0-9]*")
         for item in items:
             # Override rotate, if defined
             if file_path in self.override_files:
@@ -92,10 +93,9 @@ class LogrotateHelper:
             else:
                 count = self.calculate_count(item, self.retention)
             rotate = "rotate {}".format(count)
-            rotate_pattern = r"rotate \d+\.?[0-9]*"
             # if rotate is missing, add it as last line in the item entry
-            if re.findall(rotate_pattern, item):
-                result = re.sub(rotate_pattern, rotate, item)
+            if rotate_pattern.findall(item):
+                result = rotate_pattern.sub(rotate, item)
             else:
                 result = item.replace("}", "    " + rotate + "\n}")
             results.append(result)
