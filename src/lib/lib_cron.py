@@ -96,11 +96,11 @@ class CronHelper:
             cron_daily_minute = str(random.randrange(0, 59))
             cron_daily_schedule = cron_daily_minute + " " + cron_daily_hour
 
-            with open(r'/etc/crontab', 'r') as crontab:
+            with open(r"/etc/crontab", "r") as crontab:
                 data = crontab.read()
                 data = data.replace("25 6", cron_daily_schedule)
 
-            with open(r'/etc/crontab', 'w') as crontab:
+            with open(r"/etc/crontab", "w") as crontab:
                 crontab.write(data)
 
 
