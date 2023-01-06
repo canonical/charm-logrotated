@@ -1,5 +1,6 @@
 """Cron helper module."""
 import os
+import random
 
 from charmhelpers.core import hookenv
 
@@ -63,6 +64,8 @@ class CronHelper:
             cron_file.close()
             os.chmod(cron_file_path, 700)
 
+            self.update_cron_daily_schedule()
+
         self.cleanup_cronjob(clean_up_file)
 
     def cleanup_cronjob(self, frequency=-1):
@@ -85,6 +88,20 @@ class CronHelper:
         logrotate = LogrotateHelper()
         logrotate.read_config()
         logrotate.modify_configs()
+
+    def update_cron_daily_schedule(self):
+        """Update the cron.daily schedule."""
+        if self.cronjob_frequency == 1:
+            cron_daily_hour = str(random.randrange(4, 8))
+            cron_daily_minute = str(random.randrange(0, 59))
+            cron_daily_schedule = cron_daily_minute + " " + cron_daily_hour
+
+            with open(r'/etc/crontab', 'r') as crontab:
+                data = crontab.read()
+                data = data.replace("25 6", cron_daily_schedule)
+
+            with open(r'/etc/crontab', 'w') as crontab:
+                crontab.write(data)
 
 
 def main():
