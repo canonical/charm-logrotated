@@ -1,6 +1,7 @@
 """Cron helper module."""
 import os
 import random
+import re
 
 from charmhelpers.core import hookenv
 
@@ -94,14 +95,20 @@ class CronHelper:
         if self.cronjob_frequency == 1:
             cron_daily_hour = str(random.randrange(4, 8))
             cron_daily_minute = str(random.randrange(0, 59))
-            cron_daily_schedule = cron_daily_minute + " " + cron_daily_hour
+            cron_daily_schedule = cron_daily_minute + " " + cron_daily_hour + "\t"
+            cron_pattern = re.compile(r".*\/etc\/cron.daily.*")
 
             with open(r"/etc/crontab", "r") as crontab:
                 data = crontab.read()
-                data = data.replace("25 6", cron_daily_schedule)
 
-            with open(r"/etc/crontab", "w") as crontab:
-                crontab.write(data)
+            cron_daily = cron_pattern.findall(data)
+            if cron_daily:
+                updated_cron_daily = re.sub(
+                    r"\d?\d\s\d\t", cron_daily_schedule, cron_daily[0]
+                )
+                data = data.replace(cron_daily[0], updated_cron_daily)
+                with open(r"/etc/crontab", "w") as crontab:
+                    crontab.write(data)
 
 
 def main():
