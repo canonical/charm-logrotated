@@ -71,6 +71,7 @@ class CronHelper:
             cron_file.close()
             os.chmod(cron_file_path, 700)
 
+            # update cron.daily schedule if logrotate-cronjob-frequency set to "daily"
             if self.cronjob_frequency == 1 and self.cron_daily_schedule[0] != "unset":
                 self.validate_cron_conf(self.cron_daily_schedule)
                 self.update_cron_daily_schedule()
