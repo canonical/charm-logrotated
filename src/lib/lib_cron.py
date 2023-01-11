@@ -17,6 +17,11 @@ class CronHelper:
         self.cronjob_check_paths = ["hourly", "daily", "weekly", "monthly"]
         self.cronjob_logrotate_cron_file = "charm-logrotate"
 
+    class InvalidCronConfig(ValueError):
+        """Raised for invalid cron.daily config input."""
+
+        pass
+
     def read_config(self):
         """Read the configuration from the file.
 
@@ -67,9 +72,8 @@ class CronHelper:
             os.chmod(cron_file_path, 700)
 
             if self.cronjob_frequency == 1 and self.cron_daily_schedule[0] != "unset":
-                schedule_updated = self.update_cron_daily_schedule()
-                if schedule_updated == 1:
-                    return 1
+                self.validate_cron_conf(self.cron_daily_schedule)
+                self.update_cron_daily_schedule()
 
         self.cleanup_cronjob(clean_up_file)
 
@@ -96,34 +100,16 @@ class CronHelper:
 
     def update_cron_daily_schedule(self):
         """Update the cron.daily schedule."""
+        cron_daily_time = self.cron_daily_schedule[1].split(":")
+        if self.cron_daily_schedule[0] == "set":
+            cron_daily_hour = cron_daily_time[0]
+            cron_daily_minute = cron_daily_time[1]
+
         if self.cron_daily_schedule[0] == "random":
-            cron_daily_start_time = self.cron_daily_schedule[1].split(":")
             cron_daily_end_time = self.cron_daily_schedule[2].split(":")
-            if (
-                int(cron_daily_start_time[0]) in range(24)
-                and int(cron_daily_start_time[1]) in range(60)
-                and int(cron_daily_start_time[0]) < int(cron_daily_end_time[0])
-                and int(cron_daily_start_time[1]) < int(cron_daily_end_time[1])
-            ):
-                cron_daily_hour = (
-                    cron_daily_start_time[0] + "~" + cron_daily_end_time[0]
-                )
-                cron_daily_minute = (
-                    cron_daily_start_time[1] + "~" + cron_daily_end_time[1]
-                )
-            else:
-                return 1
-        elif self.cron_daily_schedule[0] == "set":
-            cron_daily_time = self.cron_daily_schedule[1].split(":")
-            if int(cron_daily_time[0]) in range(24) and int(
-                cron_daily_time[1]
-            ) in range(60):
-                cron_daily_hour = cron_daily_time[0]
-                cron_daily_minute = cron_daily_time[1]
-            else:
-                return 1
-        else:
-            return 1
+
+            cron_daily_hour = cron_daily_time[0] + "~" + cron_daily_end_time[0]
+            cron_daily_minute = cron_daily_time[1] + "~" + cron_daily_end_time[1]
 
         cron_daily_timestamp = cron_daily_minute + " " + cron_daily_hour + "\t"
         cron_pattern = re.compile(r".*\/etc\/cron.daily.*")
@@ -137,9 +123,43 @@ class CronHelper:
             data = data.replace(cron_daily[0], updated_cron_daily)
             with open(r"/etc/crontab", "w") as crontab:
                 crontab.write(data)
-            return 0
-        else:
-            return 1
+
+    def validate_cron_conf(self, conf):
+        """Block the unit and exit the hook if there is invalid configuration."""
+        try:
+            if conf[0] not in ("unset", "set", "random"):
+                raise ValueError(
+                    "Invalid value for update-cron-daily-schedule: {}".format(conf[0])
+                )
+
+            cron_daily_start_time = conf[1].split(":")
+            if not (
+                int(cron_daily_start_time[0]) in range(24)
+                and int(cron_daily_start_time[1]) in range(60)
+            ):
+                raise ValueError(
+                    "Invalid value for update-cron-daily-schedule: \
+                        {}:{}".format(
+                        conf[1], conf[2]
+                    )
+                )
+
+            if conf[0] == "random":
+                cron_daily_end_time = conf[2].split(":")
+                if not (
+                    int(cron_daily_end_time[0]) in range(24)
+                    and int(cron_daily_end_time[1]) in range(60)
+                    and int(cron_daily_start_time[0]) < int(cron_daily_end_time[0])
+                    and int(cron_daily_start_time[1]) < int(cron_daily_end_time[1])
+                ):
+                    raise ValueError(
+                        "Invalid value for update-cron-daily-schedule: \
+                            {}:{}".format(
+                            conf[1], conf[2]
+                        )
+                    )
+        except ValueError as err:
+            raise self.InvalidCronConfig(err)
 
 
 def main():
@@ -148,10 +168,8 @@ def main():
     cronhelper = CronHelper()
     cronhelper.read_config()
     cronhelper.update_logrotate_etc()
-    if not cronhelper.install_cronjob():
-        hookenv.status_set("active", "Unit is ready.")
-    else:
-        hookenv.status_set("blocked", "Invalid config.")
+    cronhelper.install_cronjob()
+    hookenv.status_set("active", "Unit is ready.")
 
 
 if __name__ == "__main__":

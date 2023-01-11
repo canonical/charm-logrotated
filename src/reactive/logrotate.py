@@ -21,8 +21,7 @@ def install_logrotate():
         logrotate.read_config()
         cron.read_config()
         logrotate.modify_configs()
-        if cron.install_cronjob():
-            hookenv.status_set("blocked", "Invalid config.")
+        cron.install_cronjob()
     except Exception as ex:
         hookenv.status_set("blocked", str(ex))
     hookenv.status_set("active", "Unit is ready.")
@@ -38,8 +37,7 @@ def config_changed():
         logrotate.read_config()
         hookenv.status_set("maintenance", "Modifying configs.")
         logrotate.modify_configs()
-        if cron.install_cronjob():
-            hookenv.status_set("blocked", "Invalid config.")
+        cron.install_cronjob()
     except Exception as ex:
         hookenv.status_set("blocked", str(ex))
     hookenv.status_set("active", "Unit is ready.")
