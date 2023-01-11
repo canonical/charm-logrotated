@@ -2,6 +2,4 @@ update-logrotate-files:
   description:  Triggers an update of all the files in /etc/logrotate.d/
 update-cronjob:
   description: Invokes the cronjob install and cleanup
-reschedule-cron-daily:
-  description: Reschedule cron.daily jobs to non-default/random timings
 
