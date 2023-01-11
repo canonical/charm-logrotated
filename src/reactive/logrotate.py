@@ -21,7 +21,8 @@ def install_logrotate():
         logrotate.read_config()
         cron.read_config()
         logrotate.modify_configs()
-        cron.install_cronjob()
+        if cron.install_cronjob():
+            hookenv.status_set("blocked", "Invalid config.")
     except Exception as ex:
         hookenv.status_set("blocked", str(ex))
     hookenv.status_set("active", "Unit is ready.")
@@ -37,7 +38,8 @@ def config_changed():
         logrotate.read_config()
         hookenv.status_set("maintenance", "Modifying configs.")
         logrotate.modify_configs()
-        cron.install_cronjob()
+        if cron.install_cronjob():
+            hookenv.status_set("blocked", "Invalid config.")
     except Exception as ex:
         hookenv.status_set("blocked", str(ex))
     hookenv.status_set("active", "Unit is ready.")
@@ -48,7 +50,9 @@ def dump_config_to_disk():
     cronjob_enabled = hookenv.config("logrotate-cronjob")
     cronjob_frequency = hookenv.config("logrotate-cronjob-frequency")
     logrotate_retention = hookenv.config("logrotate-retention")
+    cron_daily_schedule = hookenv.config("update-cron-daily-schedule")
     with open("/etc/logrotate_cronjob_config", "w+") as cronjob_config_file:
         cronjob_config_file.write(str(cronjob_enabled) + "\n")
         cronjob_config_file.write(str(cronjob_frequency) + "\n")
         cronjob_config_file.write(str(logrotate_retention) + "\n")
+        cronjob_config_file.write(str(cron_daily_schedule) + "\n")

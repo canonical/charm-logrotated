@@ -1,6 +1,5 @@
 """Cron helper module."""
 import os
-import random
 import re
 
 from charmhelpers.core import hookenv
@@ -35,6 +34,8 @@ class CronHelper:
 
         self.cronjob_frequency = int(self.cronjob_check_paths.index(lines[1]))
 
+        self.cron_daily_schedule = lines[3].split(",")
+
     def install_cronjob(self):
         """Install the cron job task.
 
@@ -65,7 +66,10 @@ class CronHelper:
             cron_file.close()
             os.chmod(cron_file_path, 700)
 
-            self.update_cron_daily_schedule()
+            if self.cronjob_frequency == 1 and self.cron_daily_schedule[0] != "unset":
+                schedule_updated = self.update_cron_daily_schedule()
+                if schedule_updated == 1:
+                    return 1
 
         self.cleanup_cronjob(clean_up_file)
 
@@ -92,23 +96,50 @@ class CronHelper:
 
     def update_cron_daily_schedule(self):
         """Update the cron.daily schedule."""
-        if self.cronjob_frequency == 1:
-            cron_daily_hour = str(random.randrange(4, 8))
-            cron_daily_minute = str(random.randrange(0, 59))
-            cron_daily_schedule = cron_daily_minute + " " + cron_daily_hour + "\t"
-            cron_pattern = re.compile(r".*\/etc\/cron.daily.*")
-
-            with open(r"/etc/crontab", "r") as crontab:
-                data = crontab.read()
-
-            cron_daily = cron_pattern.findall(data)
-            if cron_daily:
-                updated_cron_daily = re.sub(
-                    r"\d?\d\s\d\t", cron_daily_schedule, cron_daily[0]
+        if self.cron_daily_schedule[0] == "random":
+            cron_daily_start_time = self.cron_daily_schedule[1].split(":")
+            cron_daily_end_time = self.cron_daily_schedule[2].split(":")
+            if (
+                int(cron_daily_start_time[0]) in range(24)
+                and int(cron_daily_start_time[1]) in range(60)
+                and int(cron_daily_start_time[0]) < int(cron_daily_end_time[0])
+                and int(cron_daily_start_time[1]) < int(cron_daily_end_time[1])
+            ):
+                cron_daily_hour = (
+                    cron_daily_start_time[0] + "~" + cron_daily_end_time[0]
                 )
-                data = data.replace(cron_daily[0], updated_cron_daily)
-                with open(r"/etc/crontab", "w") as crontab:
-                    crontab.write(data)
+                cron_daily_minute = (
+                    cron_daily_start_time[1] + "~" + cron_daily_end_time[1]
+                )
+            else:
+                return 1
+        elif self.cron_daily_schedule[0] == "set":
+            cron_daily_time = self.cron_daily_schedule[1].split(":")
+            if int(cron_daily_time[0]) in range(24) and int(
+                cron_daily_time[1]
+            ) in range(60):
+                cron_daily_hour = cron_daily_time[0]
+                cron_daily_minute = cron_daily_time[1]
+            else:
+                return 1
+        else:
+            return 1
+
+        cron_daily_timestamp = cron_daily_minute + " " + cron_daily_hour + "\t"
+        cron_pattern = re.compile(r".*\/etc\/cron.daily.*")
+        with open(r"/etc/crontab", "r") as crontab:
+            data = crontab.read()
+        cron_daily = cron_pattern.findall(data)
+        if cron_daily:
+            updated_cron_daily = re.sub(
+                r"\d?\d(~\d\d)?\s\d?\d(~\d\d)?\t", cron_daily_timestamp, cron_daily[0]
+            )
+            data = data.replace(cron_daily[0], updated_cron_daily)
+            with open(r"/etc/crontab", "w") as crontab:
+                crontab.write(data)
+            return 0
+        else:
+            return 1
 
 
 def main():
@@ -117,8 +148,10 @@ def main():
     cronhelper = CronHelper()
     cronhelper.read_config()
     cronhelper.update_logrotate_etc()
-    cronhelper.install_cronjob()
-    hookenv.status_set("active", "Unit is ready.")
+    if not cronhelper.install_cronjob():
+        hookenv.status_set("active", "Unit is ready.")
+    else:
+        hookenv.status_set("blocked", "Invalid config.")
 
 
 if __name__ == "__main__":

@@ -30,16 +30,9 @@ def update_cronjob(args):
     cron.install_cronjob()
 
 
-def reschedule_cron_daily(args):
-    """Reschedule cron daily."""
-    cron.read_config()
-    cron.update_cron_daily_schedule()
-
-
 ACTIONS = {
     "update-cronjob": update_cronjob,
     "update-logrotate-files": update_logrotate_files,
-    "reschedule-cron-daily": reschedule_cron_daily,
 }
 
 
