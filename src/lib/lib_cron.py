@@ -125,44 +125,55 @@ class CronHelper:
             with open(r"/etc/crontab", "w") as crontab:
                 crontab.write(data)
 
-    def validate_cron_conf(self, conf):
+    def validate_cron_conf(self, conf=""):
         """Block the unit and exit the hook if there is invalid configuration."""
         try:
             conf = self.cron_daily_schedule
-            if conf[0] not in ("unset", "set", "random"):
+            if conf[0] not in ("unset", "set", "random") or conf.length() > 3:
                 raise ValueError(
-                    "Invalid value for update-cron-daily-schedule: {}".format(conf[0])
+                    "Invalid value for update-cron-daily-schedule: {}".format(conf)
                 )
 
-            if conf[0] != "unset":
-                cron_daily_start_time = conf[1].split(":")
-                if not (
-                    int(cron_daily_start_time[0]) in range(24)
-                    and int(cron_daily_start_time[1]) in range(60)
-                ):
-                    raise ValueError(
-                        "Invalid value for update-cron-daily-schedule: \
-                            {}:{}".format(
-                            conf[1], conf[2]
-                        )
-                    )
+            conf_mapping = {
+                "set": "_validate_set_schedule",
+                "random": "_validate_random_schedule",
+            }
 
-                if conf[0] == "random":
-                    cron_daily_end_time = conf[2].split(":")
-                    if not (
-                        int(cron_daily_end_time[0]) in range(24)
-                        and int(cron_daily_end_time[1]) in range(60)
-                        and int(cron_daily_start_time[0]) <= int(cron_daily_end_time[0])
-                        and int(cron_daily_start_time[1]) <= int(cron_daily_end_time[1])
-                    ):
-                        raise ValueError(
-                            "Invalid value for update-cron-daily-schedule: \
-                                {}:{}".format(
-                                conf[1], conf[2]
-                            )
-                        )
+            conf_handler = conf_mapping.get(conf[0])
+            conf_handler(conf)
+
         except ValueError as err:
             raise self.InvalidCronConfig(err)
+
+    def _validate_set_schedule(self, conf):
+        cron_daily_time = conf[1].split(":")
+        if not self._valid_timestamp(cron_daily_time):
+            raise ValueError(
+                "Invalid value for update-cron-daily-schedule: \
+                    {}".format(
+                    conf[1]
+                )
+            )
+
+    def _validate_random_schedule(self, conf):
+        cron_daily_start_time = conf[1].split(":")
+        cron_daily_end_time = conf[2].split(":")
+        if not (
+            self._valid_timestamp(cron_daily_start_time)
+            and self._valid_timestamp(cron_daily_end_time)
+            and int(cron_daily_start_time[0]) <= int(cron_daily_end_time[0])
+            and int(cron_daily_start_time[1]) <= int(cron_daily_end_time[1])
+        ):
+            raise ValueError(
+                "Invalid value for update-cron-daily-schedule: \
+                    {},{}".format(
+                    conf[1], conf[2]
+                )
+            )
+
+    def _valid_timestamp(self, timestamp):
+        """Validate the timestamp."""
+        return int(timestamp[0]) in range(24) and int(timestamp[1]) in range(60)
 
 
 def main():
