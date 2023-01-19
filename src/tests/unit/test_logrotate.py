@@ -135,3 +135,44 @@ class TestLogrotateHelper:
             "    rotate 42\n}\n"
         )
         assert mod_contents == expected_contents
+
+
+class TestCronHelper:
+    """Main cron test class."""
+
+    def test_random_cron_daily_schedule(self, cron):
+        """Test the validate and update random cron.daily schedule."""
+        cron_config = cron()
+        cron_config.cronjob_enabled = True
+        cron_config.cronjob_frequency = 1
+        cron_config.cron_daily_schedule = "random,06:00,07:50"
+
+        if cron_config.validate_cron_conf():
+            updated_cron_daily = cron_config.update_cron_daily_schedule()
+
+        expected_pattern = "00~50 06~07"
+
+        assert updated_cron_daily.split("\t")[0] == expected_pattern
+
+        cron_config.cron_daily_schedule = "random,07:00,07:45"
+
+        if cron_config.validate_cron_conf():
+            updated_cron_daily = cron_config.update_cron_daily_schedule()
+
+        expected_pattern = "00~45 07~07"
+
+        assert updated_cron_daily.split("\t")[0] == expected_pattern
+
+    def test_set_cron_daily_schedule(self, cron):
+        """Test the validate and update set cron.daily schedule."""
+        cron_config = cron()
+        cron_config.cronjob_enabled = True
+        cron_config.cronjob_frequency = 1
+        cron_config.cron_daily_schedule = "set,08:00"
+
+        if cron_config.validate_cron_conf():
+            updated_cron_daily = cron_config.update_cron_daily_schedule()
+
+        expected_pattern = "00 08"
+
+        assert updated_cron_daily.split("\t")[0] == expected_pattern

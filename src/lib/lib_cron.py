@@ -1,6 +1,7 @@
 """Cron helper module."""
 import os
 import re
+import subprocess
 
 from charmhelpers.core import hookenv
 
@@ -39,7 +40,7 @@ class CronHelper:
 
         self.cronjob_frequency = int(self.cronjob_check_paths.index(lines[1]))
 
-        self.cron_daily_schedule = lines[3].split(",")
+        self.cron_daily_schedule = lines[3]
 
     def install_cronjob(self):
         """Install the cron job task.
@@ -71,9 +72,12 @@ class CronHelper:
             cron_file.close()
             os.chmod(cron_file_path, 700)
 
-            self.validate_cron_conf()
             # update cron.daily schedule if logrotate-cronjob-frequency set to "daily"
-            if self.cronjob_frequency == 1 and self.cron_daily_schedule[0] != "unset":
+            if (
+                self.validate_cron_conf()
+                and self.cronjob_frequency == 1
+                and self.cron_daily_schedule[0] != "unset"
+            ):
                 self.update_cron_daily_schedule()
 
         self.cleanup_cronjob(clean_up_file)
@@ -101,13 +105,16 @@ class CronHelper:
 
     def update_cron_daily_schedule(self):
         """Update the cron.daily schedule."""
-        cron_daily_time = self.cron_daily_schedule[1].split(":")
-        if self.cron_daily_schedule[0] == "set":
+        schedule = self.cron_daily_schedule
+        split_schedule = schedule.split(",")
+        cron_daily_time = split_schedule[1].split(":")
+
+        if split_schedule[0] == "set":
             cron_daily_hour = cron_daily_time[0]
             cron_daily_minute = cron_daily_time[1]
 
-        if self.cron_daily_schedule[0] == "random":
-            cron_daily_end_time = self.cron_daily_schedule[2].split(":")
+        if split_schedule[0] == "random":
+            cron_daily_end_time = split_schedule[2].split(":")
 
             cron_daily_hour = cron_daily_time[0] + "~" + cron_daily_end_time[0]
             cron_daily_minute = cron_daily_time[1] + "~" + cron_daily_end_time[1]
@@ -117,19 +124,26 @@ class CronHelper:
         with open(r"/etc/crontab", "r") as crontab:
             data = crontab.read()
         cron_daily = cron_pattern.findall(data)
+
+        updated_cron_daily = ""
         if cron_daily:
             updated_cron_daily = re.sub(
                 r"\d?\d(~\d\d)?\s\d?\d(~\d\d)?\t", cron_daily_timestamp, cron_daily[0]
             )
             data = data.replace(cron_daily[0], updated_cron_daily)
-            with open(r"/etc/crontab", "w") as crontab:
+            with open(r"/tmp/crontab", "w") as crontab:
                 crontab.write(data)
 
-    def validate_cron_conf(self, conf=""):
+            subprocess.check_output(["sudo", "crontab", "-u", "root", "/tmp/crontab"])
+
+        return updated_cron_daily
+
+    def validate_cron_conf(self):
         """Block the unit and exit the hook if there is invalid configuration."""
         try:
             conf = self.cron_daily_schedule
-            if conf[0] not in ("unset", "set", "random") or conf.length() > 3:
+            conf = conf.split(",")
+            if conf[0] not in ("unset", "set", "random") or len(conf) > 3:
                 raise ValueError(
                     "Invalid value for update-cron-daily-schedule: {}".format(conf)
                 )
@@ -140,7 +154,8 @@ class CronHelper:
             }
 
             conf_handler = conf_mapping.get(conf[0])
-            conf_handler(conf)
+            result = eval("self." + conf_handler)(conf)
+            return result
 
         except ValueError as err:
             raise self.InvalidCronConfig(err)
@@ -154,6 +169,8 @@ class CronHelper:
                     conf[1]
                 )
             )
+        else:
+            return True
 
     def _validate_random_schedule(self, conf):
         cron_daily_start_time = conf[1].split(":")
@@ -170,6 +187,8 @@ class CronHelper:
                     conf[1], conf[2]
                 )
             )
+        else:
+            return True
 
     def _valid_timestamp(self, timestamp):
         """Validate the timestamp."""
