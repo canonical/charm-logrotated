@@ -1,5 +1,7 @@
 """Main unit test module."""
 
+import pytest
+
 
 class TestLogrotateHelper:
     """Main test class."""
@@ -135,3 +137,52 @@ class TestLogrotateHelper:
             "    rotate 42\n}\n"
         )
         assert mod_contents == expected_contents
+
+
+class TestCronHelper:
+    """Main cron test class."""
+
+    @pytest.mark.parametrize(
+        ("cron_schedule, exp_pattern"),
+        [
+            ("random,06:00,07:50", "00~50 06~07"),
+            ("random,06:00,07:00", "00~00 06~07"),
+            ("random,07:00,07:45", "00~45 07~07"),
+            ("set,08:00", "00 08"),
+        ],
+    )
+    def test_cron_daily_schedule(self, cron, cron_schedule, exp_pattern):
+        """Test the validate and update random cron.daily schedule."""
+        cron_config = cron()
+        cron_config.cronjob_enabled = True
+        cron_config.cronjob_frequency = 1
+        cron_config.cron_daily_schedule = cron_schedule
+
+        assert cron_config.validate_cron_conf()
+
+        updated_cron_daily = cron_config.update_cron_daily_schedule()
+
+        assert updated_cron_daily.split("\t")[0] == exp_pattern
+
+    @pytest.mark.parametrize(
+        ("cron_schedule"),
+        [
+            ("random,07:00,06:50"),
+            ("random,07:50,07:00"),
+            ("random,59:50,07:00"),
+            ("random,07:00,39:00"),
+            ("set,28:00"),
+            ("set,02:80"),
+        ],
+    )
+    def test_invalid_cron_daily_schedule(self, cron, cron_schedule):
+        """Test the validate and update random cron.daily schedule."""
+        cron_config = cron()
+        cron_config.cronjob_enabled = True
+        cron_config.cronjob_frequency = 1
+        cron_config.cron_daily_schedule = cron_schedule
+
+        with pytest.raises(cron_config.InvalidCronConfig) as err:
+            cron_config.validate_cron_conf()
+
+        assert err.type == cron_config.InvalidCronConfig

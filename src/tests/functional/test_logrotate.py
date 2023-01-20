@@ -50,3 +50,24 @@ async def unit(deploy_app):
 async def test_deploy(deploy_app):
     """Tst the deployment."""
     assert deploy_app.status == "active"
+
+
+async def test_configure_cron_daily(deploy_app):
+    """Test configuring cron.daily schedule for the deployment."""
+    await deploy_app.set_config({"logrotate-cronjob-frequency": "daily"})
+    await deploy_app.set_config({"update-cron-daily-schedule": "set,07:00"})
+    config = await deploy_app.get_config()
+
+    assert config["logrotate-cronjob-frequency"]["value"] == "daily"
+    assert config["update-cron-daily-schedule"]["value"] == "set,07:00"
+
+    assert deploy_app.status == "active"
+
+    await deploy_app.set_config({"logrotate-cronjob-frequency": "daily"})
+    await deploy_app.set_config({"update-cron-daily-schedule": "random,06:00,08:20"})
+    config = await deploy_app.get_config()
+
+    assert config["logrotate-cronjob-frequency"]["value"] == "daily"
+    assert config["update-cron-daily-schedule"]["value"] == "random,06:00,08:20"
+
+    assert deploy_app.status == "active"

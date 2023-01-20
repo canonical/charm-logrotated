@@ -71,3 +71,16 @@ def logrotate(tmpdir, mock_hookenv_config, mock_charm_dir, monkeypatch):
     monkeypatch.setattr("lib_logrotate.LogrotateHelper", lambda: helper)
 
     return helper
+
+
+@pytest.fixture
+def cron(monkeypatch):
+    """Cron fixture."""
+    from lib_cron import CronHelper
+
+    helper = CronHelper
+
+    # Any other functions that load helper will get this version
+    monkeypatch.setattr("lib_cron.CronHelper", lambda: helper)
+
+    return helper

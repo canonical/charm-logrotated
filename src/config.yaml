@@ -25,6 +25,17 @@ options:
       If logrotate-cronjob is True, then this value is used to determine the
       location of the cronjob file.
       Valid options are 'hourly', 'daily', 'weekly', 'monthly'.
+  update-cron-daily-schedule:
+    type: string
+    default: 'unset'
+    description: |
+      If logrotate-cronjob-frequency is set to 'daily' then this value determines whether 
+      to update the cron.daily schedule.
+      Valid options:
+      'unset': No change to default cron.daily schedule.
+      'set,HOUR:MINUTE': cron.daily schedule will be set to timestamp HOUR:MINUTE (24H) daily. 
+      'random,START_HOUR:START_MINUTE,END_HOUR:END_MINUTE': cron.daily schedule will be set 
+      to some random value between START_HOUR:START_MINUTE,END_HOUR:END_MINUTE (24H) daily.
   override:
     type: string
     default: '[]'

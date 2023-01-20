@@ -48,7 +48,9 @@ def dump_config_to_disk():
     cronjob_enabled = hookenv.config("logrotate-cronjob")
     cronjob_frequency = hookenv.config("logrotate-cronjob-frequency")
     logrotate_retention = hookenv.config("logrotate-retention")
+    cron_daily_schedule = hookenv.config("update-cron-daily-schedule")
     with open("/etc/logrotate_cronjob_config", "w+") as cronjob_config_file:
         cronjob_config_file.write(str(cronjob_enabled) + "\n")
         cronjob_config_file.write(str(cronjob_frequency) + "\n")
         cronjob_config_file.write(str(logrotate_retention) + "\n")
+        cronjob_config_file.write(str(cron_daily_schedule) + "\n")
