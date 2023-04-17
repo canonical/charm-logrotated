@@ -142,6 +142,15 @@ class TestLogrotateHelper:
 class TestCronHelper:
     """Main cron test class."""
 
+    def test_cron_daily_schedule_unset(self, cron):
+        """Test the validation of unset update-cron-daily-schedule config value."""
+        cron_config = cron()
+        cron_config.cronjob_enabled = True
+        cron_config.cronjob_frequency = 1
+        cron_config.cron_daily_schedule = "unset"
+
+        assert cron_config.validate_cron_conf()
+
     @pytest.mark.parametrize(
         ("cron_schedule, exp_pattern"),
         [

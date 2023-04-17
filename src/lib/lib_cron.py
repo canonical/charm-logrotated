@@ -76,7 +76,7 @@ class CronHelper:
             if (
                 self.validate_cron_conf()
                 and self.cronjob_frequency == 1
-                and self.cron_daily_schedule[0] != "unset"
+                and self.cron_daily_schedule.split(",")[0] != "unset"
             ):
                 self.update_cron_daily_schedule()
 
@@ -143,24 +143,33 @@ class CronHelper:
         try:
             conf = self.cron_daily_schedule
             conf = conf.split(",")
-            if conf[0] not in ("unset", "set", "random") or len(conf) > 3:
+            operation = conf[0]
+            if operation not in ("unset", "set", "random") or len(conf) > 3:
                 raise ValueError(
                     "Invalid value for update-cron-daily-schedule: {}".format(conf)
                 )
 
-            conf_mapping = {
-                "set": "_validate_set_schedule",
-                "random": "_validate_random_schedule",
-            }
+            result = True
+            # run additional validation functions
+            if operation == "set":
+                result = self._validate_set_schedule(conf)
+            elif operation == "random":
+                result = self._validate_random_schedule(conf)
 
-            conf_handler = conf_mapping.get(conf[0])
-            result = eval("self." + conf_handler)(conf)
             return result
 
         except ValueError as err:
+            hookenv.log(
+                "Cron config validation failed: {}".format(err),
+                level=hookenv.ERROR,
+            )
+            hookenv.status_set(
+                "blocked", "Cron config validation failed. Check log for more info."
+            )
             raise self.InvalidCronConfig(err)
 
     def _validate_set_schedule(self, conf):
+        """Validate update-cron-daily-schedule when the "set" keyword exists."""
         cron_daily_time = conf[1].split(":")
         if not self._valid_timestamp(cron_daily_time):
             raise ValueError(
@@ -173,6 +182,7 @@ class CronHelper:
             return True
 
     def _validate_random_schedule(self, conf):
+        """Validate update-cron-daily-schedule when the "random" keyword exists."""
         cron_daily_start_time = conf[1].split(":")
         cron_daily_end_time = conf[2].split(":")
         if not (
@@ -197,11 +207,13 @@ class CronHelper:
 
 def main():
     """Ran by cron."""
+    hookenv.log("Executing cron job.", level=hookenv.INFO)
     hookenv.status_set("maintenance", "Executing cron job.")
     cronhelper = CronHelper()
     cronhelper.read_config()
     cronhelper.update_logrotate_etc()
     cronhelper.install_cronjob()
+    hookenv.log("Cron job completed.", level=hookenv.INFO)
     hookenv.status_set("active", "Unit is ready.")
 
 
