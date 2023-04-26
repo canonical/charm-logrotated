@@ -158,6 +158,7 @@ class TestCronHelper:
             ("random,06:00,07:00", "00~00 06~07"),
             ("random,07:00,07:45", "00~45 07~07"),
             ("set,08:00", "00 08"),
+            ("unset", "25 6"),
         ],
     )
     def test_cron_daily_schedule(self, cron, cron_schedule, exp_pattern):

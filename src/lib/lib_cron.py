@@ -73,11 +73,7 @@ class CronHelper:
             os.chmod(cron_file_path, 700)
 
             # update cron.daily schedule if logrotate-cronjob-frequency set to "daily"
-            if (
-                self.validate_cron_conf()
-                and self.cronjob_frequency == 1
-                and self.cron_daily_schedule.split(",")[0] != "unset"
-            ):
+            if self.validate_cron_conf() and self.cronjob_frequency == 1:
                 self.update_cron_daily_schedule()
 
         self.cleanup_cronjob(clean_up_file)
@@ -106,18 +102,27 @@ class CronHelper:
     def update_cron_daily_schedule(self):
         """Update the cron.daily schedule."""
         schedule = self.cron_daily_schedule
-        split_schedule = schedule.split(",")
-        cron_daily_time = split_schedule[1].split(":")
+        schedule_type, _, schedule_value = schedule.partition(",")
+        cron_daily_time = schedule_value.split(":")
 
-        if split_schedule[0] == "set":
+        if schedule_type == "set":
             cron_daily_hour = cron_daily_time[0]
             cron_daily_minute = cron_daily_time[1]
 
-        if split_schedule[0] == "random":
-            cron_daily_end_time = split_schedule[2].split(":")
+        elif schedule_type == "random":
+            cron_daily_start, _, cron_daily_end = schedule_value.partition(",")
+            cron_end_hour, _, cron_end_minute = cron_daily_end.partition(":")
+            cron_start_hour, _, cron_start_minute = cron_daily_start.partition(":")
 
-            cron_daily_hour = cron_daily_time[0] + "~" + cron_daily_end_time[0]
-            cron_daily_minute = cron_daily_time[1] + "~" + cron_daily_end_time[1]
+            cron_daily_hour = cron_start_hour + "~" + cron_end_hour
+            cron_daily_minute = cron_start_minute + "~" + cron_end_minute
+
+        elif schedule_type == "unset":
+            # Revert to default ubuntu/debian values for daily cron job
+            cron_daily_hour = "6"
+            cron_daily_minute = "25"
+        else:
+            raise RuntimeError("Unknown daily schedule type: {}".format(schedule_type))
 
         cron_daily_timestamp = cron_daily_minute + " " + cron_daily_hour + "\t"
         cron_pattern = re.compile(r".*\/etc\/cron.daily.*")
