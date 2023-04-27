@@ -114,14 +114,10 @@ class LogrotateHelper:
         header = (
             "# Configuration file maintained by Juju. Local changes may be overwritten"
         )
-
-        split = content.split("\n")
-        if split[0].startswith(header):
-            result = content
-        else:
-            result = header + "\n" + content
-
-        return result
+        content = [
+            row for row in content.splitlines() if row and not row.startswith(header)
+        ]
+        return "\n".join([header, *content]) + "\n"
 
     @classmethod
     def calculate_count(cls, item, retention):
