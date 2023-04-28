@@ -50,9 +50,9 @@ class LogrotateHelper:
     def get_override_files(self):
         """Return paths for files to be overrided."""
         return [
-            path["path"]
-            for path in self.override
-            if set(path.keys()) == {"path", "rotate", "interval"}
+            override_entry["path"]
+            for override_entry in self.override
+            if "path" in override_entry  # skip those without "path".
         ]
 
     def get_override_settings(self, file_path):
@@ -62,8 +62,8 @@ class LogrotateHelper:
         """
         for override_entry in self.override:
             if file_path == override_entry["path"]:
-                rotate = override_entry["rotate"]
-                interval = override_entry["interval"]
+                rotate = override_entry.get("rotate")
+                interval = override_entry.get("interval")
         return {"rotate": rotate, "interval": interval}
 
     def modify_content(self, content, file_path):
@@ -86,10 +86,19 @@ class LogrotateHelper:
         # the rotate option to the appropriate value
         results = []
         rotate_pattern = re.compile(r"rotate \d+\.?[0-9]*")
+
+        count = None
+        interval = None
+        if file_path in self.override_files:
+            count = self.get_override_settings(file_path)["rotate"]
+            interval = self.get_override_settings(file_path)["interval"]
+
         for item in items:
             # Override rotate, if defined
             if file_path in self.override_files:
-                count = self.get_override_settings(file_path)["rotate"]
+                if count is None:
+                    results.append(item)
+                    continue
             else:
                 count = self.calculate_count(item, self.retention)
             rotate = "rotate {}".format(count)
@@ -103,8 +112,7 @@ class LogrotateHelper:
         results = "\n".join(results) + "\n"
 
         # Override interval, if defined
-        if file_path in self.override_files:
-            interval = self.get_override_settings(file_path)["interval"]
+        if interval is not None:
             results = self.override_interval_regex.sub(interval, results)
 
         return results
