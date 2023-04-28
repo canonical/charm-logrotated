@@ -29,12 +29,12 @@ options:
     type: string
     default: 'unset'
     description: |
-      If logrotate-cronjob-frequency is set to 'daily' then this value determines whether 
+      If logrotate-cronjob-frequency is set to 'daily' then this value determines whether
       to update the cron.daily schedule.
       Valid options:
       'unset': No change to default cron.daily schedule.
-      'set,HOUR:MINUTE': cron.daily schedule will be set to timestamp HOUR:MINUTE (24H) daily. 
-      'random,START_HOUR:START_MINUTE,END_HOUR:END_MINUTE': cron.daily schedule will be set 
+      'set,HOUR:MINUTE': cron.daily schedule will be set to timestamp HOUR:MINUTE (24H) daily.
+      'random,START_HOUR:START_MINUTE,END_HOUR:END_MINUTE': cron.daily schedule will be set
       to some random value between START_HOUR:START_MINUTE,END_HOUR:END_MINUTE (24H) daily.
   override:
     type: string
@@ -42,7 +42,10 @@ options:
     description: |
       JSON-formatted string with override options for files in /etc/logrotate.d/
       This override takes precendence over all other options. Format is:
-      [ {"path": "/etc/logrotate.d/rotatefile", "rotate": 5, "interval": "weekly"}, {}, ... ]
+      [ {"path": "/etc/logrotate.d/rotatefile", "rotate": 5, "interval": "weekly", "size": "100M"}, {}, ... ]
       Mind the quotes for JSON properties/values!
       Valid options for rotate: any integer value
       Valid options for interval: 'daily', 'weekly', 'monthly', 'yearly'
+      Valid options for size: any integer value with unit suffix: '', 'k', 'M', or 'G'
+      Note that the size and interval are mutually exclusive, and size takes the
+      precedence.

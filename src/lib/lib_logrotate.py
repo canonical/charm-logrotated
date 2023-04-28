@@ -14,6 +14,7 @@ class LogrotateHelper:
     def __init__(self):
         """Init function."""
         self.retention = hookenv.config("logrotate-retention")
+        self.override_size_regex = re.compile(r"size [\d]*(k|M|G)?")
         self.override_interval_regex = re.compile("(daily|weekly|monthly|yearly)")
         self.override = json.loads(hookenv.config("override"))
         self.override_files = self.get_override_files()
@@ -60,13 +61,15 @@ class LogrotateHelper:
 
         param: file_path: path to the file for manual settings.
         """
+        size = None
         rotate = None
         interval = None
         for override_entry in self.override:
             if file_path == override_entry["path"]:
+                size = override_entry.get("size")
                 rotate = override_entry.get("rotate")
                 interval = override_entry.get("interval")
-        return {"rotate": rotate, "interval": interval}
+        return {"rotate": rotate, "interval": interval, "size": size}
 
     def modify_content(self, content, file_path):
         """Edit the content of a logrotate file."""
@@ -108,16 +111,38 @@ class LogrotateHelper:
                 result = rotate_pattern.sub(rotate, item)
             else:
                 result = item.replace("}", "    " + rotate + "\n}")
+
             results.append(result)
 
         results = "\n".join(results) + "\n"
 
-        # Override interval, if defined
+        # Override interval or size, if defined
+        size = override_settings.get("size")
         interval = override_settings.get("interval")
-        if interval is not None:
-            results = self.override_interval_regex.sub(interval, results)
+        if size is not None:
+            results = self.modify_size_directive(results, size=size)
+        elif interval is not None:
+            results = self.modify_interval_directive(results, interval=interval)
 
         return results
+
+    def modify_size_directive(self, results, size=None):
+        """Modify size directive."""
+        # Replace interval with size if interval is defined
+        if self.override_interval_regex.search(results):
+            return self.override_interval_regex.sub(f"size {size}", results)
+        # Replace old size with new size
+        else:
+            return self.override_size_regex.sub(f"size {size}", results)
+
+    def modify_interval_directive(self, results, interval=None):
+        """Modify interval directive."""
+        # Replace old interval with new interval
+        if self.override_interval_regex.search(results):
+            return self.override_interval_regex.sub(interval, results)
+        # Replace size with interval if size is removed
+        else:
+            return self.override_size_regex.sub(interval, results)
 
     def modify_header(self, content):
         """Add Juju headers to the file."""
@@ -129,8 +154,8 @@ class LogrotateHelper:
         ]
         return "\n".join([header, *content]) + "\n"
 
-    @classmethod
-    def calculate_count(cls, item, retention):
+    @staticmethod
+    def calculate_count(item, retention):
         """Calculate rotate based on rotation interval. Always round up."""
         # Fallback to default lowest retention - days
         # better to keep the logs than lose them
