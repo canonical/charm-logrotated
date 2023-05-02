@@ -60,6 +60,8 @@ class LogrotateHelper:
 
         param: file_path: path to the file for manual settings.
         """
+        rotate = None
+        interval = None
         for override_entry in self.override:
             if file_path == override_entry["path"]:
                 rotate = override_entry.get("rotate")
@@ -87,12 +89,11 @@ class LogrotateHelper:
         results = []
         rotate_pattern = re.compile(r"rotate \d+\.?[0-9]*")
 
-        count = None
-        interval = None
+        override_settings = {}
         if file_path in self.override_files:
-            count = self.get_override_settings(file_path)["rotate"]
-            interval = self.get_override_settings(file_path)["interval"]
+            override_settings = self.get_override_settings(file_path)
 
+        count = override_settings.get("rotate")
         for item in items:
             # Override rotate, if defined
             if file_path in self.override_files:
@@ -112,6 +113,7 @@ class LogrotateHelper:
         results = "\n".join(results) + "\n"
 
         # Override interval, if defined
+        interval = override_settings.get("interval")
         if interval is not None:
             results = self.override_interval_regex.sub(interval, results)
 
