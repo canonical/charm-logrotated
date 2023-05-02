@@ -1,5 +1,10 @@
 """Main unit test module."""
 
+import json
+from unittest import mock
+
+from lib_logrotate import LogrotateHelper
+
 import pytest
 
 
@@ -153,6 +158,53 @@ class TestLogrotateHelper:
         )
         modified_content = logrotate.modify_header(logrotate, content)
         assert modified_content == expected_content
+
+    @pytest.mark.parametrize(
+        "test_override,input_contents,expected_contents",
+        [
+            (
+                "[ {} ]",
+                "/var/log/apt/history.log {\n  rotate 12\n  daily\n}"
+                + "\n/var/log/apt/term.log {\n  rotate 12\n  daily\n}",
+                "\n/var/log/apt/history.log {\n  rotate 12\n  daily\n}\n"
+                + "\n/var/log/apt/term.log {\n  rotate 12\n  daily\n}\n",
+            ),
+            (
+                '[ {"path": "/etc/logrotate.d/apt", "rotate": 5} ]',
+                "/var/log/apt/history.log {\n  rotate 12\n  daily\n}"
+                + "\n/var/log/apt/term.log {\n  rotate 12\n  daily\n}",
+                "\n/var/log/apt/history.log {\n  rotate 5\n  daily\n}\n"
+                + "\n/var/log/apt/term.log {\n  rotate 5\n  daily\n}\n",
+            ),
+            (
+                '[ {"path": "/etc/logrotate.d/apt", "interval": "monthly"} ]',
+                "/var/log/apt/history.log {\n  rotate 12\n  daily\n}"
+                + "\n/var/log/apt/term.log {\n  rotate 12\n  daily\n}",
+                "\n/var/log/apt/history.log {\n  rotate 12\n  monthly\n}\n"
+                + "\n/var/log/apt/term.log {\n  rotate 12\n  monthly\n}\n",
+            ),
+            (
+                '[{"path":"/etc/logrotate.d/apt","rotate":5, "interval":"monthly"}]',
+                "/var/log/apt/history.log {\n  rotate 12\n  daily\n}"
+                + "\n/var/log/apt/term.log {\n  rotate 12\n  daily\n}",
+                "\n/var/log/apt/history.log {\n  rotate 5\n  monthly\n}\n"
+                + "\n/var/log/apt/term.log {\n  rotate 5\n  monthly\n}\n",
+            ),
+        ],
+    )
+    def test_override_config_option(
+        self, test_override, input_contents, expected_contents
+    ):
+        """Test override config option."""
+        with mock.patch("lib_logrotate.hookenv.config") as mock_config:
+            mock_config.return_value = "[]"
+            file_path = "/etc/logrotate.d/apt"
+            logrotate_helper = LogrotateHelper()
+            logrotate_helper.retention = 12
+            logrotate_helper.override = json.loads(test_override)
+            logrotate_helper.override_files = logrotate_helper.get_override_files()
+            mod_contents = logrotate_helper.modify_content(input_contents, file_path)
+            assert mod_contents == expected_contents
 
 
 class TestCronHelper:
