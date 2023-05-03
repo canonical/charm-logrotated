@@ -1,7 +1,9 @@
 #!/usr/bin/python3.6
 """Main module for functional testing."""
 
+import json
 import os
+import time
 
 import pytest
 
@@ -42,6 +44,43 @@ async def unit(deploy_app):
     return deploy_app.units.pop()
 
 
+def parse_logrotate_config(content):
+    """Parse logrotate config content into a canonical form."""
+    config = []
+    configs = []
+    for row in content.strip().split("\n"):
+        row = row.rstrip()
+        if not row:
+            continue
+        elif "{" in row:
+            config = [row]
+        elif "}" in row:
+            config.append(row)
+            configs.append("\n".join(config))
+        else:
+            config.append(row)
+    return configs
+
+
+async def change_override_option(app, model, path, **directives):
+    """Apply changes to override option."""
+    test_size = directives.get("size")
+    test_rotate = directives.get("rotate")
+    test_interval = directives.get("interval")
+    test_override_option = {"path": path}
+    if test_size:
+        test_override_option["size"] = test_size
+    if test_rotate:
+        test_override_option["rotate"] = test_rotate
+    if test_interval:
+        test_override_option["interval"] = test_interval
+    test_override_option_string = json.dumps([test_override_option])
+
+    await app.set_config({"override": test_override_option_string})
+    await model.block_until(lambda: app.status == "active")
+    time.sleep(5)  # blocking is not enough, gives some time for the config to change
+
+
 #########
 # TESTS #
 #########
@@ -71,3 +110,70 @@ async def test_configure_cron_daily(deploy_app):
     assert config["update-cron-daily-schedule"]["value"] == "random,06:00,08:20"
 
     assert deploy_app.status == "active"
+
+
+async def test_configure_override_01(model, deploy_app, jujutools, unit):
+    """Test configuring override for the deployment (interval)."""
+    test_path = "/etc/logrotate.d/apt"
+    test_rotate = 100
+    test_interval = "monthly"
+    await change_override_option(
+        deploy_app, model, test_path, rotate=test_rotate, interval=test_interval
+    )
+    logrotate_config_content = await jujutools.file_contents(test_path, unit)
+    logrotate_config_content = parse_logrotate_config(logrotate_config_content)
+    for config in logrotate_config_content:
+        assert test_interval in config
+        assert f"rotate {test_rotate}" in config
+
+
+async def test_configure_override_02(model, deploy_app, jujutools, unit):
+    """Test configuring override for the deployment (interval and size)."""
+    # test path | rotate | interval | size, size should take precedence over interval
+    test_path = "/etc/logrotate.d/apt"
+    test_size = "100M"
+    test_rotate = 5
+    test_interval = "monthly"
+    await change_override_option(
+        deploy_app,
+        model,
+        test_path,
+        rotate=test_rotate,
+        interval=test_interval,
+        size=test_size,
+    )
+    logrotate_config_content = await jujutools.file_contents(test_path, unit)
+    logrotate_config_content = parse_logrotate_config(logrotate_config_content)
+    for config in logrotate_config_content:
+        assert test_interval not in config
+        assert f"size {test_size}" in config
+        assert f"rotate {test_rotate}" in config
+
+
+async def test_configure_override_03(model, deploy_app, jujutools, unit):
+    """Test configuring override for the deployment (interval -> size)."""
+    # Changing from size to interval, and the size should be removed when it's
+    # not in override.
+
+    # test path | rotate | size
+    test_path = "/etc/logrotate.d/apt"
+    test_size = "100k"
+    test_rotate = 10
+    await change_override_option(
+        deploy_app, model, test_path, rotate=test_rotate, size=test_size
+    )
+
+    # test path | rotate | interval
+    test_size = "100k"
+    test_rotate = 20
+    test_interval = "daily"
+    await change_override_option(
+        deploy_app, model, test_path, rotate=test_rotate, interval=test_interval
+    )
+
+    logrotate_config_content = await jujutools.file_contents(test_path, unit)
+    logrotate_config_content = parse_logrotate_config(logrotate_config_content)
+    for config in logrotate_config_content:
+        assert test_interval in config
+        assert f"size {test_size}" not in config
+        assert f"rotate {test_rotate}" in config
