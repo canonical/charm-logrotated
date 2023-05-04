@@ -46,6 +46,6 @@ options:
       Mind the quotes for JSON properties/values!
       Valid options for rotate: any integer value
       Valid options for interval: 'daily', 'weekly', 'monthly', 'yearly'
-      Valid options for size: any integer value with unit suffix: '', 'k', 'M', or 'G'
+      Valid options for size: any integer value with unit suffix, for example, '100', '100k', '100M', or '100G'.
       Note that the size and interval are mutually exclusive, and size takes the
       precedence.
