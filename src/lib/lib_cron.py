@@ -48,13 +48,13 @@ class CronHelper:
         If logrotate-cronjob config option is set to True install cronjob,
         otherwise cleanup.
         """
-        clean_up_file = self.cronjob_frequency if self.cronjob_enabled else -1
+        self.cleanup_cronjob_files()
 
         if self.cronjob_enabled is True:
             cronjob_path = os.path.realpath(__file__)
             cron_file_path = (
                 self.cronjob_base_path
-                + self.cronjob_check_paths[clean_up_file]
+                + self.cronjob_check_paths[self.cronjob_frequency]
                 + "/"
                 + self.cronjob_logrotate_cron_file
             )
@@ -73,25 +73,24 @@ class CronHelper:
             os.chmod(cron_file_path, 700)
 
             # update cron.daily schedule if logrotate-cronjob-frequency set to "daily"
-            if self.validate_cron_conf() and self.cronjob_frequency == 1:
+            if self.cronjob_frequency == 1 and self.validate_cron_conf():
                 self.update_cron_daily_schedule()
+        else:
+            self.cleanup_etc_config()
 
-        self.cleanup_cronjob(clean_up_file)
+    def cleanup_cronjob_files(self):
+        """Cleanup previous cronjob files."""
+        for check_path in self.cronjob_check_paths:
+            path = os.path.join(
+                self.cronjob_base_path + check_path, self.cronjob_logrotate_cron_file
+            )
+            if os.path.exists(path):
+                os.remove(path)
 
-    def cleanup_cronjob(self, frequency=-1):
-        """Cleanup previous config."""
-        if frequency == -1:
-            for check_path in self.cronjob_check_paths:
-                path = (
-                    self.cronjob_base_path
-                    + check_path
-                    + "/"
-                    + self.cronjob_logrotate_cron_file
-                )
-                if os.path.exists(path):
-                    os.remove(path)
-            if os.path.exists(self.cronjob_etc_config):
-                os.remove(self.cronjob_etc_config)
+    def cleanup_etc_config(self):
+        """Cleanup the saved config in /etc directory."""
+        if os.path.exists(self.cronjob_etc_config):
+            os.remove(self.cronjob_etc_config)
 
     def update_logrotate_etc(self):
         """Run logrotate update config."""
