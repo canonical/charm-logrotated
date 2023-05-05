@@ -27,6 +27,7 @@ class JujuTools:
             else await self.get_unit(target)
         )
         action = await unit.run(cmd)
+        await action.wait()
         return action.results
 
     async def remote_object(self, imports, remote_cmd, target):
@@ -47,7 +48,7 @@ class JujuTools:
         )
         cmd = python3.format(python_cmd)
         results = await self.run_command(cmd, target)
-        return pickle.loads(base64.b64decode(bytes(results["Stdout"][2:-1], "utf8")))
+        return pickle.loads(base64.b64decode(bytes(results["stdout"][2:-1], "utf8")))
 
     async def file_stat(self, path, target):
         """Run stat on a file.
@@ -68,4 +69,4 @@ class JujuTools:
         """
         cmd = "cat {}".format(path)
         result = await self.run_command(cmd, target)
-        return result["Stdout"]
+        return result["stdout"]

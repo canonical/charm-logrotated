@@ -190,6 +190,21 @@ class TestLogrotateHelper:
                 "\n/var/log/apt/history.log {\n  rotate 5\n  monthly\n}\n"
                 + "\n/var/log/apt/term.log {\n  rotate 5\n  monthly\n}\n",
             ),
+            (
+                '[{"path":"/etc/logrotate.d/apt","rotate":5, "size":"100"}]',
+                "/var/log/apt/history.log {\n  rotate 12\n  daily\n}"
+                + "\n/var/log/apt/term.log {\n  rotate 12\n  daily\n}",
+                "\n/var/log/apt/history.log {\n  rotate 5\n  size 100\n}\n"
+                + "\n/var/log/apt/term.log {\n  rotate 5\n  size 100\n}\n",
+            ),
+            (
+                '[{"path":"/etc/logrotate.d/apt","rotate":5, "interval":"monthly",'
+                + '"size":"1G"}]',
+                "/var/log/apt/history.log {\n  rotate 12\n  daily\n}"
+                + "\n/var/log/apt/term.log {\n  rotate 12\n  daily\n}",
+                "\n/var/log/apt/history.log {\n  rotate 5\n  size 1G\n}\n"
+                + "\n/var/log/apt/term.log {\n  rotate 5\n  size 1G\n}\n",
+            ),
         ],
     )
     def test_override_config_option(
