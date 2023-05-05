@@ -1,6 +1,7 @@
 """Main unit test module."""
-
 import json
+import os
+from textwrap import dedent
 from unittest import mock
 
 from lib_logrotate import LogrotateHelper
@@ -279,3 +280,72 @@ class TestCronHelper:
             cron_config.validate_cron_conf()
 
         assert err.type == cron_config.InvalidCronConfig
+
+    def test_install_cronjob(self, cron, mock_local_unit, mocker):
+        """Test install cronjob method."""
+        mock_charm_dir = "/mock/unit-logrotated-0/charm"
+        mock_exists = mocker.patch("lib_cron.os.path.exists", return_value=True)
+        mock_remove = mocker.patch("lib_cron.os.remove")
+        mock_chmod = mocker.patch("lib_cron.os.chmod")
+        mocker.patch(
+            "lib_cron.os.path.realpath",
+            return_value=os.path.join(mock_charm_dir, "lib/lib_cron.py"),
+        )
+        mocker.patch("lib_cron.os.getcwd", return_value=mock_charm_dir)
+        mock_open = mocker.patch("lib_cron.open")
+        mock_handle = mock_open.return_value
+
+        expected_files_to_be_removed = [
+            "/etc/cron.hourly/charm-logrotate",
+            "/etc/cron.daily/charm-logrotate",
+            "/etc/cron.weekly/charm-logrotate",
+            "/etc/cron.monthly/charm-logrotate",
+        ]
+
+        cron_config = cron()
+        cron_config.cronjob_enabled = True
+        cron_config.cronjob_frequency = 2
+        cron_config.install_cronjob()
+
+        mock_exists.assert_has_calls(
+            [mock.call(file) for file in expected_files_to_be_removed], any_order=True
+        )
+        mock_remove.assert_has_calls(
+            [mock.call(file) for file in expected_files_to_be_removed], any_order=True
+        )
+        mock_open.assert_called_once_with("/etc/cron.weekly/charm-logrotate", "w")
+        mock_handle.write.assert_called_once_with(
+            dedent(
+                """\
+                #!/bin/bash
+                /usr/bin/sudo /usr/bin/juju-run unit-logrotated/0 "/mock/unit-logrotated-0/.venv/bin/python3 /mock/unit-logrotated-0/charm/lib/lib_cron.py"
+                """  # noqa
+            )
+        )
+        mock_handle.close.assert_called_once()
+        mock_chmod.assert_called_once_with("/etc/cron.weekly/charm-logrotate", 700)
+
+    def test_install_cronjob_removes_etc_config_when_cronjob_disabled(
+        self, cron, mocker
+    ):
+        """Test that all cronjob related files created upon cronjobs being disabled."""
+        mock_exists = mocker.patch("lib_cron.os.path.exists", return_value=True)
+        mock_remove = mocker.patch("lib_cron.os.remove")
+
+        expected_files_to_be_removed = [
+            "/etc/cron.hourly/charm-logrotate",
+            "/etc/cron.daily/charm-logrotate",
+            "/etc/cron.weekly/charm-logrotate",
+            "/etc/cron.monthly/charm-logrotate",
+            "/etc/logrotate_cronjob_config",
+        ]
+        cron_config = cron()
+        cron_config.cronjob_enabled = False
+        cron_config.install_cronjob()
+
+        mock_exists.assert_has_calls(
+            [mock.call(file) for file in expected_files_to_be_removed], any_order=True
+        )
+        mock_remove.assert_has_calls(
+            [mock.call(file) for file in expected_files_to_be_removed], any_order=True
+        )

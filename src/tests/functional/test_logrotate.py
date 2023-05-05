@@ -112,6 +112,27 @@ async def test_configure_cron_daily(deploy_app):
     assert deploy_app.status == "active"
 
 
+async def test_reconfigure_cronjob_frequency(model, deploy_app, unit, jujutools):
+    """Test reconfiguration of cronjob frequency."""
+    await deploy_app.set_config({"logrotate-cronjob-frequency": "weekly"})
+    await model.block_until(lambda: deploy_app.status == "active")
+    config = await deploy_app.get_config()
+
+    result = await jujutools.run_command(
+        "test -f /etc/cron.weekly/charm-logrotate", unit
+    )
+    weekly_cronjob_exists = result["return-code"] == 0
+
+    result = await jujutools.run_command(
+        "test -f /etc/cron.daily/charm-logrotate", unit
+    )
+    daily_cronjob_exists = result["return-code"] == 0
+
+    assert config["logrotate-cronjob-frequency"]["value"] == "weekly"
+    assert not daily_cronjob_exists
+    assert weekly_cronjob_exists
+
+
 async def test_configure_override_01(model, deploy_app, jujutools, unit):
     """Test configuring override for the deployment (interval)."""
     test_path = "/etc/logrotate.d/apt"

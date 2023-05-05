@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Configurations for tests."""
 
-import mock
+from unittest import mock
 
 import pytest
 
@@ -52,6 +52,12 @@ def mock_hookenv_config(monkeypatch):
 def mock_remote_unit(monkeypatch):
     """Remote unit mock."""
     monkeypatch.setattr("lib_logrotate.hookenv.remote_unit", lambda: "unit-mock/0")
+
+
+@pytest.fixture()
+def mock_local_unit(monkeypatch):
+    """Local unit mock."""
+    monkeypatch.setattr("lib_logrotate.hookenv.local_unit", lambda: "unit-logrotated/0")
 
 
 @pytest.fixture
