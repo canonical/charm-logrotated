@@ -9,6 +9,8 @@ import pytest
 
 import pytest_asyncio
 
+import tenacity
+
 pytestmark = pytest.mark.asyncio
 SERIES = ["bionic", "focal", "jammy"]
 
@@ -118,10 +120,17 @@ async def test_reconfigure_cronjob_frequency(model, deploy_app, unit, jujutools)
     await model.block_until(lambda: deploy_app.status == "active")
     config = await deploy_app.get_config()
 
-    result = await jujutools.run_command(
-        "test -f /etc/cron.weekly/charm-logrotate", unit
-    )
-    weekly_cronjob_exists = result["return-code"] == 0
+    # Retry because test fails sometimes when cron file isn't ready yet
+    for attempt in tenacity.Retrying(
+        stop=tenacity.stop_after_attempt(3),
+        wait=tenacity.wait_exponential(multiplier=1, min=2, max=10),
+    ):
+        with attempt:
+            result = await jujutools.run_command(
+                "test -f /etc/cron.weekly/charm-logrotate", unit
+            )
+            weekly_cronjob_exists = result["return-code"] == 0
+            assert weekly_cronjob_exists
 
     result = await jujutools.run_command(
         "test -f /etc/cron.daily/charm-logrotate", unit
@@ -130,7 +139,6 @@ async def test_reconfigure_cronjob_frequency(model, deploy_app, unit, jujutools)
 
     assert config["logrotate-cronjob-frequency"]["value"] == "weekly"
     assert not daily_cronjob_exists
-    assert weekly_cronjob_exists
 
 
 async def test_configure_override_01(model, deploy_app, jujutools, unit):
