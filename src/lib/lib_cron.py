@@ -1,7 +1,6 @@
 """Cron helper module."""
 import os
 import re
-import subprocess
 
 from charmhelpers.core import hookenv
 
@@ -62,15 +61,14 @@ class CronHelper:
             logrotate_unit = hookenv.local_unit()
             python_venv_path = os.getcwd().replace("charm", "") + ".venv/bin/python3"
             # upgrade to template if logic increases
-            cron_file = open(cron_file_path, "w")
             cron_job = """#!/bin/bash
 /usr/bin/sudo /usr/bin/juju-run {} "{} {}"
 """.format(
                 logrotate_unit, python_venv_path, cronjob_path
             )
-            cron_file.write(cron_job)
-            cron_file.close()
-            os.chmod(cron_file_path, 700)
+            with open(cron_file_path, "w") as cron_file:
+                cron_file.write(cron_job)
+            os.chmod(cron_file_path, 0o755)
 
             # update cron.daily schedule if logrotate-cronjob-frequency set to "daily"
             if self.cronjob_frequency == 1 and self.validate_cron_conf():
@@ -123,7 +121,13 @@ class CronHelper:
         else:
             raise RuntimeError("Unknown daily schedule type: {}".format(schedule_type))
 
-        cron_daily_timestamp = cron_daily_minute + " " + cron_daily_hour + "\t"
+        cron_daily_timestamp = cron_daily_minute + " " + cron_daily_hour
+        self.write_to_crontab(cron_daily_timestamp)
+
+        return cron_daily_timestamp
+
+    def write_to_crontab(self, cron_daily_timestamp):
+        """Write daily cronjob with provided timestamp to /etc/crontab."""
         cron_pattern = re.compile(r".*\/etc\/cron.daily.*")
         with open(r"/etc/crontab", "r") as crontab:
             data = crontab.read()
@@ -132,15 +136,13 @@ class CronHelper:
         updated_cron_daily = ""
         if cron_daily:
             updated_cron_daily = re.sub(
-                r"\d?\d(~\d\d)?\s\d?\d(~\d\d)?\t", cron_daily_timestamp, cron_daily[0]
+                r"\d?\d(~\d\d)?\s\d?\d(~\d\d)?\t",
+                cron_daily_timestamp + "\t",
+                cron_daily[0],
             )
-            data = data.replace(cron_daily[0], updated_cron_daily)
-            with open(r"/tmp/crontab", "w") as crontab:
-                crontab.write(data)
-
-            subprocess.check_output(["sudo", "crontab", "-u", "root", "/tmp/crontab"])
-
-        return updated_cron_daily
+            updated_data = data.replace(cron_daily[0], updated_cron_daily)
+            with open(r"/etc/crontab", "w") as crontab:
+                crontab.write(updated_data)
 
     def validate_cron_conf(self):
         """Block the unit and exit the hook if there is invalid configuration."""

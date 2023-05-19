@@ -245,18 +245,54 @@ class TestCronHelper:
             ("unset", "25 6"),
         ],
     )
-    def test_cron_daily_schedule(self, cron, cron_schedule, exp_pattern):
+    def test_cron_daily_schedule(self, cron, cron_schedule, exp_pattern, mocker):
         """Test the validate and update random cron.daily schedule."""
         cron_config = cron()
         cron_config.cronjob_enabled = True
         cron_config.cronjob_frequency = 1
         cron_config.cron_daily_schedule = cron_schedule
 
-        assert cron_config.validate_cron_conf()
+        mock_method = mocker.Mock()
+        mocker.patch.object(cron, "write_to_crontab", new=mock_method)
 
         updated_cron_daily = cron_config.update_cron_daily_schedule()
 
+        assert cron_config.validate_cron_conf()
         assert updated_cron_daily.split("\t")[0] == exp_pattern
+        mock_method.assert_called_once_with(exp_pattern)
+
+    @pytest.mark.parametrize("cron_daily_timestamp", ["00 08", "25 6", "00~50 06~07"])
+    def test_write_to_crontab(self, cron, cron_daily_timestamp, mocker):
+        """Test function that writes updated data to /etc/crontab."""
+        cron_config = cron()
+        mock_open = mocker.patch("lib_cron.open")
+        mock_handle = mock_open.return_value.__enter__.return_value
+        default_crontab_contents = dedent(
+            """
+            # some comment
+            17 *\t* * * root cd / && run-parts --report /etc/cron.hourly
+            25 6\t* * root test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+            47 6\t* * 7 root test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
+            52 6\t1 * * root test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
+            #
+            """  # noqa
+        )
+        updated_crontab_contents = dedent(
+            f"""
+            # some comment
+            17 *\t* * * root cd / && run-parts --report /etc/cron.hourly
+            {cron_daily_timestamp}\t* * root test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+            47 6\t* * 7 root test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
+            52 6\t1 * * root test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
+            #
+            """  # noqa
+        )
+        mock_handle.read.return_value = default_crontab_contents
+        cron_config.write_to_crontab(cron_daily_timestamp)
+
+        mock_open.assert_any_call("/etc/crontab", "r")
+        mock_open.assert_any_call("/etc/crontab", "w")
+        mock_handle.write.assert_called_with(updated_crontab_contents)
 
     @pytest.mark.parametrize(
         ("cron_schedule"),
@@ -293,8 +329,7 @@ class TestCronHelper:
         )
         mocker.patch("lib_cron.os.getcwd", return_value=mock_charm_dir)
         mock_open = mocker.patch("lib_cron.open")
-        mock_handle = mock_open.return_value
-
+        mock_handle = mock_open.return_value.__enter__.return_value
         expected_files_to_be_removed = [
             "/etc/cron.hourly/charm-logrotate",
             "/etc/cron.daily/charm-logrotate",
@@ -322,8 +357,7 @@ class TestCronHelper:
                 """  # noqa
             )
         )
-        mock_handle.close.assert_called_once()
-        mock_chmod.assert_called_once_with("/etc/cron.weekly/charm-logrotate", 700)
+        mock_chmod.assert_called_once_with("/etc/cron.weekly/charm-logrotate", 0o755)
 
     def test_install_cronjob_removes_etc_config_when_cronjob_disabled(
         self, cron, mocker

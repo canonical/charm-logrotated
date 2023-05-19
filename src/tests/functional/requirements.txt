@@ -7,3 +7,4 @@ mock
 pytest
 pytest-asyncio
 requests
+tenacity
