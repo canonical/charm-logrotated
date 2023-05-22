@@ -233,35 +233,98 @@ class TestCronHelper:
         cron_config.cronjob_frequency = 1
         cron_config.cron_daily_schedule = "unset"
 
-        assert cron_config.validate_cron_conf()
+        assert cron_config.validate_cron_daily_schedule_conf()
 
     @pytest.mark.parametrize(
-        ("cron_schedule, exp_pattern"),
+        ("cron_schedule, random_hour, random_minute, exp_pattern"),
         [
-            ("random,06:00,07:50", "00~50 06~07"),
-            ("random,06:00,07:00", "00~00 06~07"),
-            ("random,07:00,07:45", "00~45 07~07"),
-            ("set,08:00", "00 08"),
-            ("unset", "25 6"),
+            ("random,06:00,07:50", "6", "30", "30 6"),
+            ("random,07:00,09:00", "9", "5", "5 9"),
+            ("random,07:10,10:45", "10", "10", "10 10"),
+            ("set,08:00", "0", "0", "00 08"),
+            ("unset", "0", "0", "25 6"),
         ],
     )
-    def test_cron_daily_schedule(self, cron, cron_schedule, exp_pattern, mocker):
+    def test_update_cron_daily_schedule(
+        self, cron, cron_schedule, random_hour, random_minute, exp_pattern, mocker
+    ):
         """Test the validate and update random cron.daily schedule."""
         cron_config = cron()
         cron_config.cronjob_enabled = True
         cron_config.cronjob_frequency = 1
         cron_config.cron_daily_schedule = cron_schedule
 
-        mock_method = mocker.Mock()
-        mocker.patch.object(cron, "write_to_crontab", new=mock_method)
+        mock_write_to_crontab = mocker.Mock()
+        mocker.patch.object(cron, "write_to_crontab", new=mock_write_to_crontab)
+
+        mock_get_random_time = mocker.Mock()
+        mocker.patch.object(cron, "get_random_time", new=mock_get_random_time)
+        mock_get_random_time.return_value = random_hour, random_minute
 
         updated_cron_daily = cron_config.update_cron_daily_schedule()
 
-        assert cron_config.validate_cron_conf()
+        assert cron_config.validate_cron_daily_schedule_conf()
         assert updated_cron_daily.split("\t")[0] == exp_pattern
-        mock_method.assert_called_once_with(exp_pattern)
+        mock_write_to_crontab.assert_called_once_with(exp_pattern)
 
-    @pytest.mark.parametrize("cron_daily_timestamp", ["00 08", "25 6", "00~50 06~07"])
+    @pytest.mark.parametrize(
+        ("start_time", "end_time"),
+        [
+            ("06:30", "09:45"),
+            ("7:42", "12:35"),
+            ("18:10", "21:45"),
+            ("2:8", "4:6"),
+            ("7:30", "7:30"),
+            ("30:25", "32:40"),
+        ],
+    )
+    def test_get_random_time(self, cron, start_time, end_time):
+        """Test random time setting for update-cron-daily-schedule."""
+        cron_config = cron()
+
+        # generate set containing all possible minutes within time_range
+        start_hour, start_minute = [int(t) for t in start_time.split(":")]
+        end_hour, end_minute = [int(t) for t in end_time.split(":")]
+        all_minutes_in_range = set()
+        current_hour = start_hour
+        current_minute = start_minute
+        while current_hour < end_hour or (
+            current_hour == end_hour and current_minute <= end_minute
+        ):
+            all_minutes_in_range.add(f"{current_hour}:{current_minute}")
+            current_minute += 1
+            if current_minute == 60:
+                current_minute = 0
+                current_hour += 1
+
+        # run `get_random_time` multiple times, collect output and
+        # see if we're able to obtain all possible minutes in range.
+        random_time_set = set()
+        for _ in range(5000):
+            random_hour, random_minute = cron_config.get_random_time(
+                start_time, end_time
+            )
+            random_time = f"{random_hour}:{random_minute}"
+            random_time_set.add(random_time)
+
+        assert all_minutes_in_range == random_time_set
+
+    @pytest.mark.parametrize(
+        ("start_time", "end_time"),
+        [
+            ("09:30", "06:45"),  # start_time > end_time
+            ("130:45", "18:125"),  # invalid time
+        ],
+    )
+    def test_invalid_get_random_time(self, cron, start_time, end_time):
+        """Test invalid time range arguments for get_random_time."""
+        cron_config = cron()
+        with pytest.raises(ValueError):
+            cron_config.get_random_time(start_time, end_time)
+
+    @pytest.mark.parametrize(
+        "cron_daily_timestamp", ["00 08", "25 6", "40 18", "5 7", "20 4", "5 35"]
+    )
     def test_write_to_crontab(self, cron, cron_daily_timestamp, mocker):
         """Test function that writes updated data to /etc/crontab."""
         cron_config = cron()
@@ -297,23 +360,48 @@ class TestCronHelper:
     @pytest.mark.parametrize(
         ("cron_schedule"),
         [
+            ("random,06:00,07:00"),
+            ("random,7:50,9:30"),
+            ("random,15:00,19:30"),
+            ("random,08:40,09:20"),
+            ("set,8:00"),
+            ("set,12:10"),
+            ("unset"),
+        ],
+    )
+    def test_valid_cron_daily_schedule(self, cron, cron_schedule):
+        """Test valid configuration for cron.daily schedule."""
+        cron_config = cron()
+        cron_config.cronjob_enabled = True
+        cron_config.cronjob_frequency = 1
+        cron_config.cron_daily_schedule = cron_schedule
+        try:
+            cron_config.validate_cron_daily_schedule_conf()
+        except cron_config.InvalidCronConfig:
+            pytest.fail("InvalidCronConfig should not be raised.")
+
+    @pytest.mark.parametrize(
+        ("cron_schedule"),
+        [
             ("random,07:00,06:50"),
             ("random,07:50,07:00"),
             ("random,59:50,07:00"),
             ("random,07:00,39:00"),
+            ("random,09:20,08:40"),
             ("set,28:00"),
             ("set,02:80"),
+            ("invalid_setting"),
         ],
     )
     def test_invalid_cron_daily_schedule(self, cron, cron_schedule):
-        """Test the validate and update random cron.daily schedule."""
+        """Test invalid configuration for cron.daily schedule."""
         cron_config = cron()
         cron_config.cronjob_enabled = True
         cron_config.cronjob_frequency = 1
         cron_config.cron_daily_schedule = cron_schedule
 
         with pytest.raises(cron_config.InvalidCronConfig) as err:
-            cron_config.validate_cron_conf()
+            cron_config.validate_cron_daily_schedule_conf()
 
         assert err.type == cron_config.InvalidCronConfig
 
@@ -330,6 +418,8 @@ class TestCronHelper:
         mocker.patch("lib_cron.os.getcwd", return_value=mock_charm_dir)
         mock_open = mocker.patch("lib_cron.open")
         mock_handle = mock_open.return_value.__enter__.return_value
+        mock_write_to_crontab = mocker.Mock()
+        mocker.patch.object(cron, "write_to_crontab", new=mock_write_to_crontab)
         expected_files_to_be_removed = [
             "/etc/cron.hourly/charm-logrotate",
             "/etc/cron.daily/charm-logrotate",
@@ -340,6 +430,7 @@ class TestCronHelper:
         cron_config = cron()
         cron_config.cronjob_enabled = True
         cron_config.cronjob_frequency = 2
+        cron_config.cron_daily_schedule = "unset"
         cron_config.install_cronjob()
 
         mock_exists.assert_has_calls(

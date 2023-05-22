@@ -29,13 +29,16 @@ options:
     type: string
     default: 'unset'
     description: |
-      If logrotate-cronjob-frequency is set to 'daily' then this value determines whether
-      to update the cron.daily schedule.
+      This value determines the time schedule with which the cron.daily job in
+      /etc/crontab runs. This is done in order to control the execution time for
+      the `/etc/cron.daily/logrotate` job.
       Valid options:
       'unset': No change to default cron.daily schedule.
       'set,HOUR:MINUTE': cron.daily schedule will be set to timestamp HOUR:MINUTE (24H) daily.
       'random,START_HOUR:START_MINUTE,END_HOUR:END_MINUTE': cron.daily schedule will be set
       to some random value between START_HOUR:START_MINUTE,END_HOUR:END_MINUTE (24H) daily.
+      Note that all cron.daily jobs are affected by this config. They still run once a
+      day but according to the time specified here.
   override:
     type: string
     default: '[]'
