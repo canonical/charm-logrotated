@@ -216,9 +216,7 @@ def main():
     hookenv.log("Executing cron job.", level=hookenv.INFO)
     hookenv.status_set("maintenance", "Executing cron job.")
     cronhelper = CronHelper()
-    cronhelper.read_config()
     cronhelper.update_logrotate_etc()
-    cronhelper.install_cronjob()
     hookenv.log("Cron job completed.", level=hookenv.INFO)
     hookenv.status_set("active", "Unit is ready.")
 
