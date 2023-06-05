@@ -1,6 +1,8 @@
 """Cron helper module."""
 import os
+import random
 import re
+from datetime import datetime
 
 from charmhelpers.core import hookenv
 
@@ -70,8 +72,7 @@ class CronHelper:
                 cron_file.write(cron_job)
             os.chmod(cron_file_path, 0o755)
 
-            # update cron.daily schedule if logrotate-cronjob-frequency set to "daily"
-            if self.cronjob_frequency == 1 and self.validate_cron_conf():
+            if self.validate_cron_daily_schedule_conf():
                 self.update_cron_daily_schedule()
         else:
             self.cleanup_etc_config()
@@ -108,11 +109,9 @@ class CronHelper:
 
         elif schedule_type == "random":
             cron_daily_start, _, cron_daily_end = schedule_value.partition(",")
-            cron_end_hour, _, cron_end_minute = cron_daily_end.partition(":")
-            cron_start_hour, _, cron_start_minute = cron_daily_start.partition(":")
-
-            cron_daily_hour = cron_start_hour + "~" + cron_end_hour
-            cron_daily_minute = cron_start_minute + "~" + cron_end_minute
+            cron_daily_hour, cron_daily_minute = CronHelper.get_random_time(
+                cron_daily_start, cron_daily_end
+            )
 
         elif schedule_type == "unset":
             # Revert to default ubuntu/debian values for daily cron job
@@ -126,6 +125,31 @@ class CronHelper:
 
         return cron_daily_timestamp
 
+    @staticmethod
+    def get_random_time(start_time, end_time):
+        """Return a random time between the provided time range.
+
+        start_time and end_time are both timestamps in the format "08:30".
+        A random time between start_time and end_time is returned as
+        two values for the random_hour and random_minute strings.
+        """
+        # Convert start and end times to integers
+        start_hour, start_minute = [int(t) for t in start_time.split(":")]
+        end_hour, end_minute = [int(t) for t in end_time.split(":")]
+
+        # Calculate the total number of minutes between the start and end times
+        total_start_minutes = start_hour * 60 + start_minute
+        total_end_minutes = end_hour * 60 + end_minute
+        total_minutes_range = total_end_minutes - total_start_minutes
+
+        # Generate a random number of minutes within the range
+        random_minutes = random.randint(0, total_minutes_range)
+
+        # Calculate the hour and minute components of the random time
+        random_hour = (total_start_minutes + random_minutes) // 60
+        random_minute = (total_start_minutes + random_minutes) % 60
+        return str(random_hour), str(random_minute)
+
     def write_to_crontab(self, cron_daily_timestamp):
         """Write daily cronjob with provided timestamp to /etc/crontab."""
         cron_pattern = re.compile(r".*\/etc\/cron.daily.*")
@@ -136,7 +160,7 @@ class CronHelper:
         updated_cron_daily = ""
         if cron_daily:
             updated_cron_daily = re.sub(
-                r"\d?\d(~\d\d)?\s\d?\d(~\d\d)?\t",
+                r"\d?\d\s\d?\d\t",
                 cron_daily_timestamp + "\t",
                 cron_daily[0],
             )
@@ -144,8 +168,11 @@ class CronHelper:
             with open(r"/etc/crontab", "w") as crontab:
                 crontab.write(updated_data)
 
-    def validate_cron_conf(self):
-        """Block the unit and exit the hook if there is invalid configuration."""
+    def validate_cron_daily_schedule_conf(self):
+        """Validate configuration for update-cron-daily-schedule.
+
+        Block the unit and exit the hook in case of invalid configuration.
+        """
         try:
             conf = self.cron_daily_schedule
             conf = conf.split(",")
@@ -158,9 +185,9 @@ class CronHelper:
             result = True
             # run additional validation functions
             if operation == "set":
-                result = self._validate_set_schedule(conf)
+                result = CronHelper._validate_set_schedule(conf[1])
             elif operation == "random":
-                result = self._validate_random_schedule(conf)
+                result = CronHelper._validate_random_schedule(conf[1], conf[2])
 
             return result
 
@@ -174,40 +201,58 @@ class CronHelper:
             )
             raise self.InvalidCronConfig(err)
 
-    def _validate_set_schedule(self, conf):
-        """Validate update-cron-daily-schedule when the "set" keyword exists."""
-        cron_daily_time = conf[1].split(":")
-        if not self._valid_timestamp(cron_daily_time):
+    @staticmethod
+    def _validate_set_schedule(cron_daily_time):
+        """Validate update-cron-daily-schedule when the "set" keyword exists.
+
+        cron_daily_time is a time in the format "08:30".
+        """
+        if not CronHelper._valid_timestamp(cron_daily_time):
             raise ValueError(
                 "Invalid value for update-cron-daily-schedule: \
                     {}".format(
-                    conf[1]
+                    cron_daily_time
                 )
             )
         else:
             return True
 
-    def _validate_random_schedule(self, conf):
-        """Validate update-cron-daily-schedule when the "random" keyword exists."""
-        cron_daily_start_time = conf[1].split(":")
-        cron_daily_end_time = conf[2].split(":")
+    @staticmethod
+    def _validate_random_schedule(start_time, end_time):
+        """Validate update-cron-daily-schedule when the "random" keyword exists.
+
+        start_time and end_time are timestamps in the format "08:30".
+        """
         if not (
-            self._valid_timestamp(cron_daily_start_time)
-            and self._valid_timestamp(cron_daily_end_time)
-            and int(cron_daily_start_time[0]) <= int(cron_daily_end_time[0])
-            and int(cron_daily_start_time[1]) <= int(cron_daily_end_time[1])
+            CronHelper._valid_timestamp(start_time)
+            and CronHelper._valid_timestamp(end_time)
         ):
+            raise ValueError("Invalid time provided for random schedule.")
+
+        start_time_datetime = datetime.strptime(start_time, "%H:%M")
+        end_time_datetime = datetime.strptime(end_time, "%H:%M")
+        if start_time_datetime < end_time_datetime:
+            return True
+        elif start_time_datetime == end_time_datetime:
             raise ValueError(
-                "Invalid value for update-cron-daily-schedule: \
-                    {},{}".format(
-                    conf[1], conf[2]
-                )
+                f"Random time range is invalid."
+                f"Start time ({start_time}) and "
+                f"end time ({end_time}) can't be equal."
             )
         else:
-            return True
+            raise ValueError(
+                f"Random time range is invalid."
+                f"Start time ({start_time}) should not be "
+                f"after end time ({end_time})."
+            )
 
-    def _valid_timestamp(self, timestamp):
-        """Validate the timestamp."""
+    @staticmethod
+    def _valid_timestamp(timestamp):
+        """Validate the timestamp.
+
+        timestamp is in the format "08:30".
+        """
+        timestamp = timestamp.split(":")
         return int(timestamp[0]) in range(24) and int(timestamp[1]) in range(60)
 
 
@@ -216,9 +261,7 @@ def main():
     hookenv.log("Executing cron job.", level=hookenv.INFO)
     hookenv.status_set("maintenance", "Executing cron job.")
     cronhelper = CronHelper()
-    cronhelper.read_config()
     cronhelper.update_logrotate_etc()
-    cronhelper.install_cronjob()
     hookenv.log("Cron job completed.", level=hookenv.INFO)
     hookenv.status_set("active", "Unit is ready.")
 
