@@ -222,6 +222,32 @@ class TestLogrotateHelper:
             mod_contents = logrotate_helper.modify_content(input_contents, file_path)
             assert mod_contents == expected_contents
 
+    @pytest.mark.parametrize(
+        ("status","frequency","retention","cron_schedule"),
+        [
+            (True,"hourly",12,"random,03:00,15:00"),
+            (True,"daily",50,"set,14:00,20:50"),
+            (True,"weekly",120,"random,10:00,18:50"),
+            (False,"monthly",365,"random,06:00,07:00"),
+        ],
+    )
+    def test_read_config(self, logrotate, status, frequency, retention, cron_schedule, mocker):
+        """Test read_config method."""
+        logrotate_crontab_config_content = dedent(
+            f"""\
+            {status}
+            {frequency}
+            {retention}
+            {cron_schedule}
+            """
+        )
+        mocker.patch("lib_logrotate.open", mock.mock_open(read_data=logrotate_crontab_config_content))
+        mocker.patch('lib_logrotate.os.path.isfile', return_value=True)
+
+        logrotate.read_config(logrotate)
+
+        assert logrotate.retention == retention
+
 
 class TestCronHelper:
     """Main cron test class."""
@@ -243,6 +269,8 @@ class TestCronHelper:
             ("random,07:10,10:45", "10", "10", "10 10"),
             ("set,08:00", "0", "0", "00 08"),
             ("unset", "0", "0", "25 6"),
+            ("invalid", "0", "0", "10 10"),
+            ("unknown", "0", "0", "10 10"),
         ],
     )
     def test_update_cron_daily_schedule(
@@ -261,11 +289,16 @@ class TestCronHelper:
         mocker.patch.object(cron, "get_random_time", new=mock_get_random_time)
         mock_get_random_time.return_value = random_hour, random_minute
 
-        updated_cron_daily = cron_config.update_cron_daily_schedule()
+        if cron_config.cron_daily_schedule.partition(",")[0] in ["set","unset","random"]: 
+            updated_cron_daily = cron_config.update_cron_daily_schedule()
 
-        assert cron_config.validate_cron_daily_schedule_conf()
-        assert updated_cron_daily.split("\t")[0] == exp_pattern
-        mock_write_to_crontab.assert_called_once_with(exp_pattern)
+            assert cron_config.validate_cron_daily_schedule_conf()
+            assert updated_cron_daily.split("\t")[0] == exp_pattern
+            mock_write_to_crontab.assert_called_once_with(exp_pattern)
+        else:
+            with pytest.raises(RuntimeError):
+                cron_config.update_cron_daily_schedule()
+
 
     @pytest.mark.parametrize(
         ("start_time", "end_time"),
@@ -388,6 +421,7 @@ class TestCronHelper:
             ("random,59:50,07:00"),
             ("random,07:00,39:00"),
             ("random,09:20,08:40"),
+            ("random,08:00,08:00"),
             ("set,28:00"),
             ("set,02:80"),
             ("invalid_setting"),
@@ -474,3 +508,32 @@ class TestCronHelper:
         mock_remove.assert_has_calls(
             [mock.call(file) for file in expected_files_to_be_removed], any_order=True
         )
+
+    @pytest.mark.parametrize(
+        ("status","frequency","retention","cron_schedule"),
+        [
+            (True,"hourly","12","random,03:00,15:00"),
+            (True,"daily","50","set,14:00,20:50"),
+            (True,"weekly","120","random,10:00,18:50"),
+            (False,"monthly","365","random,06:00,07:00"),
+        ],
+    )
+    def test_cron_read_config(self, cron, status, frequency, retention, cron_schedule, mocker):
+        logrotate_crontab_config_content = dedent(
+            f"""\
+            {status}
+            {frequency}
+            {retention}
+            {cron_schedule}
+            """
+        )
+        mocker.patch("lib_cron.open", mock.mock_open(read_data=logrotate_crontab_config_content))
+        mocker.patch('lib_cron.os.path.isfile', return_value=True)
+        
+        cron_config = cron()
+        cron_config.cronjob_check_paths = ["hourly", "daily", "weekly", "monthly"]
+        cron_config.read_config()
+        
+        assert cron_config.cronjob_enabled == status
+        assert cron_config.cronjob_frequency == int(cron_config.cronjob_check_paths.index(frequency))
+        assert cron_config.cron_daily_schedule == cron_schedule
