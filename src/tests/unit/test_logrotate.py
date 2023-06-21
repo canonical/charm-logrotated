@@ -303,7 +303,7 @@ class TestCronHelper:
     def test_invalid_update_cron_daily_schedule(
         self, cron, cron_schedule, random_hour, random_minute, exp_pattern, mocker
     ):
-        """Test the validate and update random cron.daily schedule."""
+        """Test invalid update cron.daily schedule."""
         cron_config = cron()
         cron_config.cronjob_enabled = True
         cron_config.cronjob_frequency = 1
@@ -539,6 +539,7 @@ class TestCronHelper:
         ],
     )
     def test_cron_read_config(self, cron, status, frequency, retention, cron_schedule, mocker):
+        """Test cronjob read_config method."""
         logrotate_crontab_config_content = dedent(
             f"""\
             {status}
