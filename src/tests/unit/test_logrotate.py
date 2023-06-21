@@ -269,8 +269,6 @@ class TestCronHelper:
             ("random,07:10,10:45", "10", "10", "10 10"),
             ("set,08:00", "0", "0", "00 08"),
             ("unset", "0", "0", "25 6"),
-            ("invalid", "0", "0", "10 10"),
-            ("unknown", "0", "0", "10 10"),
         ],
     )
     def test_update_cron_daily_schedule(
@@ -289,15 +287,37 @@ class TestCronHelper:
         mocker.patch.object(cron, "get_random_time", new=mock_get_random_time)
         mock_get_random_time.return_value = random_hour, random_minute
 
-        if cron_config.cron_daily_schedule.partition(",")[0] in ["set","unset","random"]: 
-            updated_cron_daily = cron_config.update_cron_daily_schedule()
+        updated_cron_daily = cron_config.update_cron_daily_schedule()
 
-            assert cron_config.validate_cron_daily_schedule_conf()
-            assert updated_cron_daily.split("\t")[0] == exp_pattern
-            mock_write_to_crontab.assert_called_once_with(exp_pattern)
-        else:
-            with pytest.raises(RuntimeError):
-                cron_config.update_cron_daily_schedule()
+        assert cron_config.validate_cron_daily_schedule_conf()
+        assert updated_cron_daily.split("\t")[0] == exp_pattern
+        mock_write_to_crontab.assert_called_once_with(exp_pattern)
+
+    @pytest.mark.parametrize(
+        ("cron_schedule, random_hour, random_minute, exp_pattern"),
+        [
+            ("invalid", "0", "0", "10 10"),
+            ("unknown", "0", "0", "10 10"),
+        ],
+    )
+    def test_invalid_update_cron_daily_schedule(
+        self, cron, cron_schedule, random_hour, random_minute, exp_pattern, mocker
+    ):
+        """Test the validate and update random cron.daily schedule."""
+        cron_config = cron()
+        cron_config.cronjob_enabled = True
+        cron_config.cronjob_frequency = 1
+        cron_config.cron_daily_schedule = cron_schedule
+
+        mock_write_to_crontab = mocker.Mock()
+        mocker.patch.object(cron, "write_to_crontab", new=mock_write_to_crontab)
+
+        mock_get_random_time = mocker.Mock()
+        mocker.patch.object(cron, "get_random_time", new=mock_get_random_time)
+        mock_get_random_time.return_value = random_hour, random_minute
+
+        with pytest.raises(RuntimeError):
+            cron_config.update_cron_daily_schedule()
 
 
     @pytest.mark.parametrize(
