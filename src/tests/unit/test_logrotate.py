@@ -223,15 +223,17 @@ class TestLogrotateHelper:
             assert mod_contents == expected_contents
 
     @pytest.mark.parametrize(
-        ("status","frequency","retention","cron_schedule"),
+        ("status", "frequency", "retention", "cron_schedule"),
         [
-            (True,"hourly",12,"random,03:00,15:00"),
-            (True,"daily",50,"set,14:00,20:50"),
-            (True,"weekly",120,"random,10:00,18:50"),
-            (False,"monthly",365,"random,06:00,07:00"),
+            (True, "hourly", 12, "random,03:00,15:00"),
+            (True, "daily", 50, "set,14:00,20:50"),
+            (True, "weekly", 120, "random,10:00,18:50"),
+            (False, "monthly", 365, "random,06:00,07:00"),
         ],
     )
-    def test_read_config(self, logrotate, status, frequency, retention, cron_schedule, mocker):
+    def test_read_config(
+        self, logrotate, status, frequency, retention, cron_schedule, mocker
+    ):
         """Test read_config method."""
         logrotate_crontab_config_content = dedent(
             f"""\
@@ -241,8 +243,11 @@ class TestLogrotateHelper:
             {cron_schedule}
             """
         )
-        mocker.patch("lib_logrotate.open", mock.mock_open(read_data=logrotate_crontab_config_content))
-        mocker.patch('lib_logrotate.os.path.isfile', return_value=True)
+        mocker.patch(
+            "lib_logrotate.open",
+            mock.mock_open(read_data=logrotate_crontab_config_content),
+        )
+        mocker.patch("lib_logrotate.os.path.isfile", return_value=True)
 
         logrotate.read_config(logrotate)
 
@@ -318,7 +323,6 @@ class TestCronHelper:
 
         with pytest.raises(RuntimeError):
             cron_config.update_cron_daily_schedule()
-
 
     @pytest.mark.parametrize(
         ("start_time", "end_time"),
@@ -530,15 +534,17 @@ class TestCronHelper:
         )
 
     @pytest.mark.parametrize(
-        ("status","frequency","retention","cron_schedule"),
+        ("status", "frequency", "retention", "cron_schedule"),
         [
-            (True,"hourly","12","random,03:00,15:00"),
-            (True,"daily","50","set,14:00,20:50"),
-            (True,"weekly","120","random,10:00,18:50"),
-            (False,"monthly","365","random,06:00,07:00"),
+            (True, "hourly", "12", "random,03:00,15:00"),
+            (True, "daily", "50", "set,14:00,20:50"),
+            (True, "weekly", "120", "random,10:00,18:50"),
+            (False, "monthly", "365", "random,06:00,07:00"),
         ],
     )
-    def test_cron_read_config(self, cron, status, frequency, retention, cron_schedule, mocker):
+    def test_cron_read_config(
+        self, cron, status, frequency, retention, cron_schedule, mocker
+    ):
         """Test cronjob read_config method."""
         logrotate_crontab_config_content = dedent(
             f"""\
@@ -548,13 +554,17 @@ class TestCronHelper:
             {cron_schedule}
             """
         )
-        mocker.patch("lib_cron.open", mock.mock_open(read_data=logrotate_crontab_config_content))
-        mocker.patch('lib_cron.os.path.isfile', return_value=True)
-        
+        mocker.patch(
+            "lib_cron.open", mock.mock_open(read_data=logrotate_crontab_config_content)
+        )
+        mocker.patch("lib_cron.os.path.isfile", return_value=True)
+
         cron_config = cron()
         cron_config.cronjob_check_paths = ["hourly", "daily", "weekly", "monthly"]
         cron_config.read_config()
-        
+
         assert cron_config.cronjob_enabled == status
-        assert cron_config.cronjob_frequency == int(cron_config.cronjob_check_paths.index(frequency))
+        assert cron_config.cronjob_frequency == int(
+            cron_config.cronjob_check_paths.index(frequency)
+        )
         assert cron_config.cron_daily_schedule == cron_schedule
