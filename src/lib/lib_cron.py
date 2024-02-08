@@ -1,4 +1,5 @@
 """Cron helper module."""
+
 import os
 import random
 import re
