@@ -1,4 +1,5 @@
 """Reactive charm hooks."""
+
 from charmhelpers.core import hookenv
 
 from charms.reactive import set_flag, when, when_not

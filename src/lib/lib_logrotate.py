@@ -1,4 +1,5 @@
 """Logrotate module."""
+
 import json
 import os
 import re
