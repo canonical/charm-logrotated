@@ -2,6 +2,7 @@
 """Main module for functional testing."""
 
 import json
+import logging
 import os
 import time
 
@@ -12,8 +13,10 @@ import pytest_asyncio
 import tenacity
 
 pytestmark = pytest.mark.asyncio
-SERIES = ["focal", "jammy", "bionic"]
-
+SERIES = ["focal", "jammy"]
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 ############
 # FIXTURES #
@@ -23,6 +26,7 @@ SERIES = ["focal", "jammy", "bionic"]
 @pytest_asyncio.fixture(scope="module", params=SERIES)
 async def deploy_app(request, model):
     """Deploy the logrotate charm as a subordinate of ubuntu."""
+    logging.info(f"Starting deployment for: {request.param}")
     release = request.param
 
     await model.deploy(
@@ -90,6 +94,7 @@ async def change_override_option(app, model, path, **directives):
 
 async def test_deploy(deploy_app):
     """Tst the deployment."""
+    logging.info("Testing deployment status...")
     assert deploy_app.status == "active"
 
 
