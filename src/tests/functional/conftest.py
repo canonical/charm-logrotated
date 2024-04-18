@@ -10,6 +10,7 @@ if set, the testing model won't be torn down at the end of the testing session
 """
 
 import asyncio
+import logging
 import os
 import subprocess
 import uuid
@@ -19,6 +20,17 @@ from juju.controller import Controller
 from juju_tools import JujuTools
 
 import pytest_asyncio
+
+
+def pytest_configure():
+    """Test logging.
+
+    Do this too allow for fixtures using a broader scope.
+    """
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+    logging.info("Logging is configured.")
 
 
 @pytest_asyncio.fixture(scope="module")
