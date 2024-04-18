@@ -17,6 +17,7 @@ SERIES = ["focal", "jammy"]
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+logger = logging.getLogger()
 
 ############
 # FIXTURES #
@@ -26,7 +27,7 @@ logging.basicConfig(
 @pytest_asyncio.fixture(scope="module", params=SERIES)
 async def deploy_app(request, model):
     """Deploy the logrotate charm as a subordinate of ubuntu."""
-    logging.info(f"Starting deployment for: {request.param}")
+    logger.info(f"Starting deployment for: {request.param}")
     release = request.param
 
     await model.deploy(
