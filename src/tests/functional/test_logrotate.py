@@ -101,6 +101,7 @@ async def test_deploy(deploy_app):
 
 async def test_configure_cron_daily(deploy_app):
     """Test configuring cron.daily schedule for the deployment."""
+    logging.info("Testing config cron daily")
     await deploy_app.set_config({"logrotate-cronjob-frequency": "daily"})
     await deploy_app.set_config({"update-cron-daily-schedule": "set,07:00"})
     config = await deploy_app.get_config()
