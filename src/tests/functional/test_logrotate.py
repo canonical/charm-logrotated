@@ -24,6 +24,9 @@ async def deploy_app(request, model):
     """Deploy the logrotate charm as a subordinate of ubuntu."""
     release = request.param
 
+    await model.deploy(
+        "ubuntu", application_name="ubuntu-" + release, series=release, channel="stable"
+    )
     logrotate_app = await model.deploy(
         "{}/logrotated.charm".format(os.getenv("CHARM_LOCATION")),
         application_name="logrotate-" + release,
