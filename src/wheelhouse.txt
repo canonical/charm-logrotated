@@ -1,2 +1,1 @@
 setuptools>=42
-flit-core>=3
