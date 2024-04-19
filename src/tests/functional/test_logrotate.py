@@ -2,7 +2,6 @@
 """Main module for functional testing."""
 
 import json
-import logging
 import os
 import time
 
@@ -14,10 +13,6 @@ import tenacity
 
 pytestmark = pytest.mark.asyncio
 SERIES = ["focal", "jammy"]
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger()
 
 ############
 # FIXTURES #
@@ -27,12 +22,8 @@ logger = logging.getLogger()
 @pytest_asyncio.fixture(scope="module", params=SERIES)
 async def deploy_app(request, model):
     """Deploy the logrotate charm as a subordinate of ubuntu."""
-    logger.info(f"Starting deployment for: {request.param}")
     release = request.param
 
-    await model.deploy(
-        "ubuntu", application_name="ubuntu-" + release, series=release, channel="stable"
-    )
     logrotate_app = await model.deploy(
         "{}/logrotated.charm".format(os.getenv("CHARM_LOCATION")),
         application_name="logrotate-" + release,
@@ -95,13 +86,11 @@ async def change_override_option(app, model, path, **directives):
 
 async def test_deploy(deploy_app):
     """Tst the deployment."""
-    logging.info("Testing deployment status...")
     assert deploy_app.status == "active"
 
 
 async def test_configure_cron_daily(deploy_app):
     """Test configuring cron.daily schedule for the deployment."""
-    logging.info("Testing config cron daily")
     await deploy_app.set_config({"logrotate-cronjob-frequency": "daily"})
     await deploy_app.set_config({"update-cron-daily-schedule": "set,07:00"})
     config = await deploy_app.get_config()
