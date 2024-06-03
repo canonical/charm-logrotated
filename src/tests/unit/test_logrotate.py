@@ -566,6 +566,7 @@ class TestCronHelper:
             )
         )
         mock_chmod.assert_called_once_with("/etc/cron.weekly/charm-logrotate", 0o755)
+
     def test_install_cronjob_removes_etc_config_when_cronjob_disabled(
         self, cron, mocker
     ):
