@@ -63,6 +63,8 @@ class CronHelper:
 
             logrotate_unit = hookenv.local_unit()
             python_venv_path = os.getcwd().replace("charm", "") + ".venv/bin/python3"
+            # juju run was changed to juju exec in juju 3.0.
+            # This will return True if juju is at least version 3.0.
             if hookenv.has_juju_version("3.0"):
                 juju_exec = "juju-exec"
             else:
