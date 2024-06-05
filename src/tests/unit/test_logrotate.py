@@ -474,6 +474,12 @@ class TestCronHelper:
             "lib_cron.os.path.realpath",
             return_value=os.path.join(mock_charm_dir, "lib/lib_cron.py"),
         )
+        # has_juju_version is used to test for juju3,
+        # so keep it false here to verify the original juju2 behaviour.
+        mocker.patch(
+            "lib_cron.hookenv.has_juju_version",
+            return_value=False,
+        )
         mocker.patch("lib_cron.os.getcwd", return_value=mock_charm_dir)
         mock_open = mocker.patch("lib_cron.open")
         mock_handle = mock_open.return_value.__enter__.return_value
@@ -504,6 +510,58 @@ class TestCronHelper:
                 """\
                 #!/bin/bash
                 /usr/bin/sudo /usr/bin/juju-run unit-logrotated/0 "/mock/unit-logrotated-0/.venv/bin/python3 /mock/unit-logrotated-0/charm/lib/lib_cron.py"
+                """  # noqa
+            )
+        )
+        mock_chmod.assert_called_once_with("/etc/cron.weekly/charm-logrotate", 0o755)
+
+    def test_install_cronjob_juju3(self, cron, mock_local_unit, mocker):
+        """Test install cronjob method under juju3."""
+        mock_charm_dir = "/mock/unit-logrotated-0/charm"
+        mock_exists = mocker.patch("lib_cron.os.path.exists", return_value=True)
+        mock_remove = mocker.patch("lib_cron.os.remove")
+        mock_chmod = mocker.patch("lib_cron.os.chmod")
+        mocker.patch(
+            "lib_cron.os.path.realpath",
+            return_value=os.path.join(mock_charm_dir, "lib/lib_cron.py"),
+        )
+        # has_juju_version is used to test for juju3.
+        # Set it True here so it thinks it's running under juju3.
+        mocker.patch(
+            "lib_cron.hookenv.has_juju_version",
+            return_value=True,
+        )
+        mocker.patch("lib_cron.os.getcwd", return_value=mock_charm_dir)
+        mock_open = mocker.patch("lib_cron.open")
+        mock_handle = mock_open.return_value.__enter__.return_value
+        mock_write_to_crontab = mocker.Mock()
+        mocker.patch.object(cron, "write_to_crontab", new=mock_write_to_crontab)
+        expected_files_to_be_removed = [
+            "/etc/cron.hourly/charm-logrotate",
+            "/etc/cron.daily/charm-logrotate",
+            "/etc/cron.weekly/charm-logrotate",
+            "/etc/cron.monthly/charm-logrotate",
+        ]
+
+        cron_config = cron()
+        cron_config.cronjob_enabled = True
+        cron_config.cronjob_frequency = 2
+        cron_config.cron_daily_schedule = "unset"
+        cron_config.install_cronjob()
+
+        mock_exists.assert_has_calls(
+            [mock.call(file) for file in expected_files_to_be_removed], any_order=True
+        )
+        mock_remove.assert_has_calls(
+            [mock.call(file) for file in expected_files_to_be_removed], any_order=True
+        )
+        mock_open.assert_called_once_with("/etc/cron.weekly/charm-logrotate", "w")
+        # should be juju-exec under juju3
+        mock_handle.write.assert_called_once_with(
+            dedent(
+                """\
+                #!/bin/bash
+                /usr/bin/sudo /usr/bin/juju-exec unit-logrotated/0 "/mock/unit-logrotated-0/.venv/bin/python3 /mock/unit-logrotated-0/charm/lib/lib_cron.py"
                 """  # noqa
             )
         )

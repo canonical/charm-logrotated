@@ -63,11 +63,20 @@ class CronHelper:
 
             logrotate_unit = hookenv.local_unit()
             python_venv_path = os.getcwd().replace("charm", "") + ".venv/bin/python3"
+            # juju run was changed to juju exec in juju 3.0.
+            # This will return True if juju is at least version 3.0.
+            if hookenv.has_juju_version("3.0"):
+                juju_exec = "juju-exec"
+            else:
+                juju_exec = "juju-run"
             # upgrade to template if logic increases
             cron_job = """#!/bin/bash
-/usr/bin/sudo /usr/bin/juju-run {} "{} {}"
+/usr/bin/sudo /usr/bin/{juju_exec} {logrotate_unit} "{python_venv_path} {cronjob_path}"
 """.format(
-                logrotate_unit, python_venv_path, cronjob_path
+                juju_exec=juju_exec,
+                logrotate_unit=logrotate_unit,
+                python_venv_path=python_venv_path,
+                cronjob_path=cronjob_path,
             )
             with open(cron_file_path, "w") as cron_file:
                 cron_file.write(cron_job)
