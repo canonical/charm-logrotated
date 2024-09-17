@@ -77,7 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runs-on: [TODO]
+        runs-on: [[ubuntu-22.04]]
         test-command: ["tox -e func"]
         juju-channel: ["3.4/stable"]
     steps:
