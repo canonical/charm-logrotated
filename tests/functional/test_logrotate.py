@@ -28,7 +28,7 @@ async def deploy_app(request, model):
         "ubuntu", application_name="ubuntu-" + release, series=release, channel="stable"
     )
     logrotate_app = await model.deploy(
-        "{}/logrotated.charm".format(os.getenv("CHARM_LOCATION")),
+        os.getenv(f"CHARM_PATH_{release.upper()}"),
         application_name="logrotate-" + release,
         series=release,
         num_units=0,
