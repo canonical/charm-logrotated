@@ -1,2 +1,5 @@
 setuptools>=42
+# NOTE: The typing-extensions could not be installed without this requirement to be specified.
 flit-core>=3
+# NOTE: pbr 6.1.1 introduced a dependency on setuptools>=64, which is not available in the build environment constraints.
+pbr==6.1.0
