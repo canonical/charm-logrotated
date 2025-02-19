@@ -125,15 +125,11 @@ async def test_reconfigure_cronjob_frequency(model, deploy_app, unit, jujutools)
         wait=tenacity.wait_exponential(multiplier=1, min=2, max=10),
     ):
         with attempt:
-            result = await jujutools.run_command(
-                "test -f /etc/cron.weekly/charm-logrotate", unit
-            )
+            result = await jujutools.run_command("test -f /etc/cron.weekly/charm-logrotate", unit)
             weekly_cronjob_exists = result["return-code"] == 0
             assert weekly_cronjob_exists
 
-    result = await jujutools.run_command(
-        "test -f /etc/cron.daily/charm-logrotate", unit
-    )
+    result = await jujutools.run_command("test -f /etc/cron.daily/charm-logrotate", unit)
     daily_cronjob_exists = result["return-code"] == 0
 
     assert config["logrotate-cronjob-frequency"]["value"] == "weekly"
@@ -187,9 +183,7 @@ async def test_configure_override_03(model, deploy_app, jujutools, unit):
     test_path = "/etc/logrotate.d/apt"
     test_size = "100k"
     test_rotate = 10
-    await change_override_option(
-        deploy_app, model, test_path, rotate=test_rotate, size=test_size
-    )
+    await change_override_option(deploy_app, model, test_path, rotate=test_rotate, size=test_size)
 
     # test path | rotate | interval
     test_size = "100k"

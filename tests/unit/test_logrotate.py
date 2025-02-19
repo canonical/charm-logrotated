@@ -148,7 +148,7 @@ class TestLogrotateHelper:
     @pytest.mark.parametrize("header_count", [0, 1, 2, 10])
     def test_modify_header(self, logrotate, header_count):
         """Test the modify_header method works and is idempotent."""
-        header = "# Configuration file maintained by Juju. Local changes may be overwritten\n"  # noqa
+        header = "# Configuration file maintained by Juju. Local changes may be overwritten\n"
         content_body = (
             "\n/log/some.log {\n  rotate 42\n  daily\n}\n\n"
             "/log/other.log {\n  rotate 6\n  weekly\n}\n"
@@ -209,9 +209,7 @@ class TestLogrotateHelper:
             ),
         ],
     )
-    def test_override_config_option(
-        self, test_override, input_contents, expected_contents
-    ):
+    def test_override_config_option(self, test_override, input_contents, expected_contents):
         """Test override config option."""
         with mock.patch("lib_logrotate.hookenv.config") as mock_config:
             mock_config.return_value = "[]"
@@ -232,9 +230,7 @@ class TestLogrotateHelper:
             (False, "monthly", 365, "random,06:00,07:00"),
         ],
     )
-    def test_read_config(
-        self, logrotate, status, frequency, retention, cron_schedule, mocker
-    ):
+    def test_read_config(self, logrotate, status, frequency, retention, cron_schedule, mocker):
         """Test read_config method."""
         logrotate_crontab_config_content = dedent(
             f"""\
@@ -349,7 +345,7 @@ class TestCronHelper:
         while current_hour < end_hour or (
             current_hour == end_hour and current_minute <= end_minute
         ):
-            all_minutes_in_range.add(f"{current_hour}:{current_minute}")
+            all_minutes_in_range.add(f"{current_hour}:{current_minute}")  # noqa: E231
             current_minute += 1
             if current_minute == 60:
                 current_minute = 0
@@ -359,10 +355,8 @@ class TestCronHelper:
         # see if we're able to obtain all possible minutes in range.
         random_time_set = set()
         for _ in range(5000):
-            random_hour, random_minute = cron_config.get_random_time(
-                start_time, end_time
-            )
-            random_time = f"{random_hour}:{random_minute}"
+            random_hour, random_minute = cron_config.get_random_time(start_time, end_time)
+            random_time = f"{random_hour}:{random_minute}"  # noqa: E231
             random_time_set.add(random_time)
 
         assert all_minutes_in_range == random_time_set
@@ -396,7 +390,7 @@ class TestCronHelper:
             47 6\t* * 7 root test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
             52 6\t1 * * root test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
             #
-            """  # noqa
+            """
         )
         updated_crontab_contents = dedent(
             f"""
@@ -510,7 +504,7 @@ class TestCronHelper:
                 """\
                 #!/bin/bash
                 /usr/bin/sudo /usr/bin/juju-run unit-logrotated/0 "/mock/unit-logrotated-0/.venv/bin/python3 /mock/unit-logrotated-0/charm/lib/lib_cron.py"
-                """  # noqa
+                """
             )
         )
         mock_chmod.assert_called_once_with("/etc/cron.weekly/charm-logrotate", 0o755)
@@ -562,14 +556,12 @@ class TestCronHelper:
                 """\
                 #!/bin/bash
                 /usr/bin/sudo /usr/bin/juju-exec unit-logrotated/0 "/mock/unit-logrotated-0/.venv/bin/python3 /mock/unit-logrotated-0/charm/lib/lib_cron.py"
-                """  # noqa
+                """
             )
         )
         mock_chmod.assert_called_once_with("/etc/cron.weekly/charm-logrotate", 0o755)
 
-    def test_install_cronjob_removes_etc_config_when_cronjob_disabled(
-        self, cron, mocker
-    ):
+    def test_install_cronjob_removes_etc_config_when_cronjob_disabled(self, cron, mocker):
         """Test that all cronjob related files created upon cronjobs being disabled."""
         mock_exists = mocker.patch("lib_cron.os.path.exists", return_value=True)
         mock_remove = mocker.patch("lib_cron.os.remove")
@@ -601,9 +593,7 @@ class TestCronHelper:
             (False, "monthly", "365", "random,06:00,07:00"),
         ],
     )
-    def test_cron_read_config(
-        self, cron, status, frequency, retention, cron_schedule, mocker
-    ):
+    def test_cron_read_config(self, cron, status, frequency, retention, cron_schedule, mocker):
         """Test cronjob read_config method."""
         logrotate_crontab_config_content = dedent(
             f"""\
@@ -613,9 +603,7 @@ class TestCronHelper:
             {cron_schedule}
             """
         )
-        mocker.patch(
-            "lib_cron.open", mock.mock_open(read_data=logrotate_crontab_config_content)
-        )
+        mocker.patch("lib_cron.open", mock.mock_open(read_data=logrotate_crontab_config_content))
         mocker.patch("lib_cron.os.path.isfile", return_value=True)
 
         cron_config = cron()
