@@ -188,9 +188,7 @@ class CronHelper:
             conf = conf.split(",")
             operation = conf[0]
             if operation not in ("unset", "set", "random") or len(conf) > 3:
-                raise ValueError(
-                    "Invalid value for update-cron-daily-schedule: {}".format(conf)
-                )
+                raise ValueError("Invalid value for update-cron-daily-schedule: {}".format(conf))
 
             result = True
             # run additional validation functions
@@ -233,10 +231,7 @@ class CronHelper:
 
         start_time and end_time are timestamps in the format "08:30".
         """
-        if not (
-            CronHelper._valid_timestamp(start_time)
-            and CronHelper._valid_timestamp(end_time)
-        ):
+        if not (CronHelper._valid_timestamp(start_time) and CronHelper._valid_timestamp(end_time)):
             raise ValueError("Invalid time provided for random schedule.")
 
         start_time_datetime = datetime.strptime(start_time, "%H:%M")

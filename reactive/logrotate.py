@@ -49,9 +49,7 @@ def config_changed():
             "Error running config-changed hook: {}".format(str(ex)),
             level=hookenv.ERROR,
         )
-        hookenv.status_set(
-            "blocked", "Config-changed hook failed. Check logs for more info."
-        )
+        hookenv.status_set("blocked", "Config-changed hook failed. Check logs for more info.")
         return
     hookenv.status_set("active", "Unit is ready.")
 

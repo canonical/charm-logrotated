@@ -147,12 +147,8 @@ class LogrotateHelper:
 
     def modify_header(self, content):
         """Add Juju headers to the file."""
-        header = (
-            "# Configuration file maintained by Juju. Local changes may be overwritten"
-        )
-        content = [
-            row for row in content.splitlines() if row and not row.startswith(header)
-        ]
+        header = "# Configuration file maintained by Juju. Local changes may be overwritten"
+        content = [row for row in content.splitlines() if row and not row.startswith(header)]
         return "\n".join([header, *content]) + "\n"
 
     @staticmethod
