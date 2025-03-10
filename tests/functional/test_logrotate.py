@@ -12,7 +12,7 @@ import pytest_asyncio
 import tenacity
 
 pytestmark = pytest.mark.asyncio
-SERIES = ["focal", "jammy"]
+SERIES = ["focal", "jammy", "noble"]
 
 ############
 # FIXTURES #
