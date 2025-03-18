@@ -1,4 +1,4 @@
-git+https://github.com/juju/charm-helpers.git#egg=charmhelpers
+charmhelpers
 charms.reactive
 pytest
 pytest-cov
