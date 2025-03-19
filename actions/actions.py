@@ -1,14 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/local/sbin/charm-env python3
 """Actions module."""
 
 import os
 import sys
 
 sys.path.append("lib")
-
-from charms.layer.basic import activate_venv  # NOQA E402
-
-activate_venv()
 
 from charmhelpers.core.hookenv import action_fail  # NOQA E402
 from lib_cron import CronHelper  # NOQA E402
