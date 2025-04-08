@@ -6,9 +6,7 @@ import os
 import time
 
 import pytest
-
 import pytest_asyncio
-
 import tenacity
 
 pytestmark = pytest.mark.asyncio

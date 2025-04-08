@@ -1,13 +1,9 @@
 """Reactive charm hooks."""
 
 from charmhelpers.core import hookenv
-
 from charms.reactive import set_flag, when, when_not
-
 from lib_cron import CronHelper
-
 from lib_logrotate import LogrotateHelper
-
 
 hooks = hookenv.Hooks()
 logrotate = LogrotateHelper()

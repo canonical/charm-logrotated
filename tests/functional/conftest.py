@@ -14,11 +14,9 @@ import os
 import subprocess
 import uuid
 
-from juju.controller import Controller
-
-from juju_tools import JujuTools
-
 import pytest_asyncio
+from juju.controller import Controller
+from juju_tools import JujuTools
 
 
 @pytest_asyncio.fixture(scope="module")

@@ -5,9 +5,8 @@ import os
 from textwrap import dedent
 from unittest import mock
 
-from lib_logrotate import LogrotateHelper
-
 import pytest
+from lib_logrotate import LogrotateHelper
 
 
 class TestLogrotateHelper:
