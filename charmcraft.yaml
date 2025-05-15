@@ -3,9 +3,8 @@ parts:
   charm:
     source: .
     plugin: reactive
-    reactive-charm-build-arguments:
-      - --binary-wheels-from-source
-      - -v
+    build-environment:
+      - PIP_CONSTRAINT: $CRAFT_PART_BUILD/constraints.txt
     build-snaps:
       - charm/latest/edge
 platforms:
