@@ -1,14 +1,16 @@
 name: logrotated
-maintainer: Llama (LMA) Charmers <llama-charmers@lists.ubuntu.com> 
+maintainer: Llama (LMA) Charmers <llama-charmers@lists.ubuntu.com>
 summary: Logrotate configuration editor
 description: |
   logrotate is designed to ease administration of systems that generate
   large numbers of log files. It allows automatic rotation, compression,
   removal, and mailing of log files. Each log file may be handled daily,
   weekly, monthly, or when it grows too large.
-  .
+
   This charm can be deployed alongside principle charms to enable logrotate
-  management across deployed services.
+  management across deployed services. When deploying this charm, make sure
+  it's deployment with a base that matches the principle charm. For example,
+  `juju deploy --base ubuntu@24.04`
 subordinate: true
 series: []
 tags:
