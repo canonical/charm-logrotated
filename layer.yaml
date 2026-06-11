@@ -3,4 +3,6 @@ includes:
 options:
     basic:
         use_venv: true
+        env:
+            TMPDIR: /var/tmp
 repo: https://github.com/canonical/charm-logrotated
